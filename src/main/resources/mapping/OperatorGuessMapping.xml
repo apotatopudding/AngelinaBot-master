@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.strelitzia.dao.OperatorGuessMapper">
+    <resultMap id="BaseResultMap" type="top.strelitzia.model.OperatorGuessInfo">
+        <result column="operator_id" property="operatorId" jdbcType="INTEGER"/>
+        <result column="operator_name" property="operatorName" jdbcType="VARCHAR"/>
+        <result column="draw_name" property="drawName" jdbcType="VARCHAR"/>
+        <result column="operator_rarity" property="operatorRarity" jdbcType="INTEGER"/>
+        <result column="sex" property="sex" jdbcType="VARCHAR"/>
+        <result column="come_from" property="comeFrom" jdbcType="VARCHAR"/>
+        <result column="race" property="race" jdbcType="VARCHAR"/>
+        <result column="infection" property="infection" jdbcType="VARCHAR"/>
+        <result column="profession" property="profession" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="getOperatorInfoByName" resultMap="BaseResultMap">
+        SELECT
+        *
+        FROM
+        a_operator
+        WHERE
+        operator_name = #{name}
+    </select>
+
+    <select id="getOperatorName" resultMap="BaseResultMap">
+    SELECT
+    *
+    FROM
+    a_operator
+    ORDER BY RANDOM()
+    LIMIT 1;
+    </select>
+
+    <select id="getOperatorInfoById" resultMap="BaseResultMap">
+        SELECT
+        *
+        FROM
+        a_operator
+        WHERE
+        operator_id = #{operatorId}
+    </select>
+
+
+
+</mapper>
