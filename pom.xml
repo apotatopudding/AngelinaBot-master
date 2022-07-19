@@ -23,9 +23,20 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.github.dadiyang</groupId>
+            <artifactId>jave</artifactId>
+            <version>1.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.json-lib</groupId>
+            <artifactId>json-lib</artifactId>
+            <version>2.4</version>
+            <classifier>jdk15</classifier>
+        </dependency>
+        <dependency>
             <groupId>top.angelina-bot</groupId>
             <artifactId>angelina-frame</artifactId>
-            <version>1.0.1</version>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -36,17 +47,16 @@
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>1.11.3</version>
+            <version>1.14.3</version>
         </dependency>
         <dependency>
             <groupId>com.baidu.aip</groupId>
             <artifactId>java-sdk</artifactId>
-            <version>4.15.1</version>
+            <version>4.16.8</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.5.9</version>
         </dependency>
         <dependency>
             <groupId>com.madgag</groupId>
@@ -91,6 +101,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>14</source>
+                    <target>14</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
