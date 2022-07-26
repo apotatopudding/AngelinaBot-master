@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.strelitzia.dao.OperatorSelectExerciseMapper">
+    <resultMap id="BaseResultMap" type="top.strelitzia.model.OperatorSelectExerciseInfo">
+        <result column="group_id" property="groupId" jdbcType="INTEGER"/>
+        <result column="try_num" property="tryNum" jdbcType="INTEGER"/>
+        <result column="select_id" property="selectId" jdbcType="INTEGER"/>
+
+    </resultMap>
+
+    <!--  根据群组ID查询当前题目选中的干员ID  -->
+    <select id="selectIdByGroupId" resultMap="BaseResultMap">
+        SELECT
+        select_id
+        FROM
+        a_operator_select_exercise
+        WHERE
+        group_id = #{groupId,jdbcType=INTEGER}
+    </select>
+
+    <!-- 更新猜测的次数  -->
+    <update id="tryNumByGroupId">
+        INSERT INTO a_operator_select_exercise (group_id)
+        VALUES
+        (#{groupId,jdbcType=VARCHAR}) ON CONFLICT(group_id)
+        DO update set
+        try_num = try_num + 1
+    </update>
+
+    <!--  插入群号，若已存在，则更新选中干员 -->
+    <update id="selectId">
+        INSERT INTO a_operator_select_exercise (group_id, select_id, try_num)
+        VALUES
+        (#{groupId,jdbcType=VARCHAR},#{selectId,jdbcType=VARCHAR}, 1) ON CONFLICT(group_id)
+        DO update set
+        select_id = #{selectId,jdbcType=INTEGER}
+    </update>
+
+    <!--  //根据群号查询当前尝试次数  -->
+    <select id="OperatorNumByGroupID" resultMap="BaseResultMap">
+        SELECT try_num
+        FROM
+        a_operator_select_exercise
+        WHERE
+        group_id = #{groupId,jdbcType=INTEGER}
+    </select>
+
+    <!--  清空清空猜干员尝试次数  -->
+    <update id="cleanNum">
+        INSERT INTO a_operator_select_exercise (group_id, try_num)
+        VALUES
+        (#{groupId},1) ON CONFLICT(group_id)
+        DO update set
+        try_num = 1, select_id = 0
+    </update>
+
+</mapper>

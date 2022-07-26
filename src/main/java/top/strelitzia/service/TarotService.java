@@ -29,20 +29,18 @@ public class TarotService {
         replayInfo.setReplayMessage("您今日已经占卜过了呢，您是想看看看今日的占卜结果吗");
         if (this.takeTarotPass(messageInfo.getQq() ,messageInfo.getName())){
             String folderPath = "runFile/TarotPicture";
-            //D:/新建文件夹/angelina/runFile/wallPaper
-            // F:/new folder/AngelinaBot-master/AngelinaBot-master/runFile/wallPaper
             File folder = new File(folderPath);
             File[] files = folder.listFiles();
             if(folder.isDirectory()) {
                 int picNum = files.length;
                 //创建图片编号数组用于筛选
-                List<Integer> picList = new ArrayList();
-                int i,j,selectPicIndex = 0;
+                List<Integer> picList = new ArrayList<>();
+                int i,j,selectPicIndex;
                 for (i=1;i<=picNum;i++){
                     picList.add(i);
                 }
                 //筛选出需要的三个不重复图片文件编号
-                List<Integer> newList = createRandoms(picList,3);
+                List<Integer> newList = createRandoms(picList);
                 String tarotCard1 = null,tarotCard2 = null,tarotCard3 = null;
                 //创建循环以取出值对应到文件编号
                 for(j=0;j<newList.size();j++){
@@ -50,23 +48,18 @@ public class TarotService {
                     File selectFile = files[selectPicIndex];
                     //oriFileName = selectFile.getAbsolutePath();
                     log.info("file:"+selectFile.getName());
-                    switch (j){
-                        case 0:
-                            tarotCard1 = selectFile.getName();
-                            break;
-                        case 1:
-                            tarotCard2 = selectFile.getName();
-                            break;
-                        default:
-                            tarotCard3 = selectFile.getName();
-                            break;
+                    switch (j) {
+                        case 0 -> tarotCard1 = selectFile.getName();
+                        case 1 -> tarotCard2 = selectFile.getName();
+                        default -> tarotCard3 = selectFile.getName();
                     }
                 }
                 this.tarotMapper.updateTarotCardByQQ(messageInfo.getQq(),tarotCard1,tarotCard2,tarotCard3);
+                replayInfo.setReplayMessage("您的三张牌已经抽取完毕，请您翻开第一张预言牌吧");
+            }else {
+                replayInfo.setReplayMessage("文件读取失败，请通知琴柳机器人的运行者");
             }
-            replayInfo.setReplayMessage("您的三张牌已经抽取完毕，请您翻开第一张预言牌吧");
         }
-
         return replayInfo;
     }
 
@@ -120,7 +113,7 @@ public class TarotService {
 
 
     public boolean takeTarotPass(Long qq ,String name){
-        //判断是否到达每天三次条件
+        //判断是否到达每天一次条件
         boolean pass = false;
         TarotInfo tarotInfo =this.tarotMapper.selectTarotByQQ(qq);
         if (tarotInfo == null) {
@@ -138,13 +131,13 @@ public class TarotService {
     }
 
 
-    private List<Integer> createRandoms(List<Integer> list, int n) {
-        Map<Integer,String> map = new HashMap();
-        List<Integer> news = new ArrayList();
-        if (list.size() <= n) {
+    private List<Integer> createRandoms(List<Integer> list) {
+        Map<Integer,String> map = new HashMap<>();
+        List<Integer> news = new ArrayList<>();
+        if (list.size() <= 3) {
             return list;
         } else {
-            while (map.size() < n) {
+            while (map.size() < 3) {
                 int random = (int)(Math.random() * list.size());
                 if (!map.containsKey(random)) {
                     map.put(random, "");

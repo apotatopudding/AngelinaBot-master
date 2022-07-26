@@ -5,6 +5,8 @@ import net.mamoe.mirai.contact.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
+import top.angelinaBot.container.AngelinaEventSource;
+import top.angelinaBot.container.AngelinaListener;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.util.SendMessageUtil;
@@ -116,51 +118,48 @@ public class RouletteService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"轮盘对决参赛"}, description = "六人参赛，一人丧命")
+    @AngelinaGroup(keyWords = {"轮盘对决"}, description = "六人参赛，一人丧命")
     public ReplayInfo RouletteDuel(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        List<Long> QQList = rouletteDuel.get(messageInfo.getGroupId());
-        if (QQList == null){
-            QQList = new ArrayList<>();
-        }else {
-            if (QQList.contains(messageInfo.getQq())){
-                replayInfo.setReplayMessage("您已经参加了轮盘对决，不要重复参加哦");
+        if (rouletteDuel.containsKey(messageInfo.getGroupId())){
+            replayInfo.setReplayMessage("当前群组的轮盘对决还没有结束，您可以继续报名加入哦");
+            return replayInfo;
+        }
+        List<Long> QQList = new ArrayList<>();
+        replayInfo.setReplayMessage("这是一把充满荣耀与死亡的守护铳，六个弹槽只有一颗子弹，六位参赛者也将会有一位不幸者将再也发不出声音。" +
+                "\n有胆量的，就发送加入来加入决斗吧");
+        sendMessageUtil.sendGroupMsg(replayInfo);
+        replayInfo.setReplayMessage(null);
+        int i=1;
+        while (i<=6){
+            AngelinaListener angelinaListener = new AngelinaListener() {
+                @Override
+                public boolean callback(MessageInfo message) {
+                    String mess = message.getText();
+                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
+                            mess.equals("加入");
+                }
+            };
+            angelinaListener.setGroupId(messageInfo.getGroupId());
+            angelinaListener.setSecond(30);
+            MessageInfo recall = AngelinaEventSource.waiter(angelinaListener).getMessageInfo();
+            if (recall == null) {
+                replayInfo.setReplayMessage("抱歉，太长时间没有人报名，轮盘对决已经取消了，您可以再发起一场新的轮盘对决呢");
                 return replayInfo;
             }
+            if (QQList.contains(recall.getQq())){
+                replayInfo.setReplayMessage("您已经参加了轮盘对决，不要重复参加哦");
+                break;
+            }else {
+                replayInfo.setReplayMessage("欢迎第"+ i +"位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
+                sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.setReplayMessage(null);
+                QQList.add(messageInfo.getQq());
+                i++;
+            }
         }
-        switch (QQList.size()) {
-            case 0 -> {
-                replayInfo.setReplayMessage("这是一把充满荣耀与死亡的守护铳，六个弹槽只有一颗子弹，六位参赛者也将会有一位不幸者将再也发不出声音。\n欢迎第一位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
-                QQList.add(messageInfo.getQq());
-                rouletteDuel.put(messageInfo.getGroupId(),QQList);
-            }
-            case 1 -> {
-                replayInfo.setReplayMessage("欢迎第二位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
-                QQList.add(messageInfo.getQq());
-                rouletteDuel.put(messageInfo.getGroupId(),QQList);
-            }
-            case 2 -> {
-                replayInfo.setReplayMessage("欢迎第三位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
-                QQList.add(messageInfo.getQq());
-                rouletteDuel.put(messageInfo.getGroupId(),QQList);
-            }
-            case 3 -> {
-                replayInfo.setReplayMessage("欢迎第四位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
-                QQList.add(messageInfo.getQq());
-                rouletteDuel.put(messageInfo.getGroupId(),QQList);
-            }
-            case 4 -> {
-                replayInfo.setReplayMessage("欢迎第五位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
-                QQList.add(messageInfo.getQq());
-                rouletteDuel.put(messageInfo.getGroupId(),QQList);
-            }
-            case 5 -> {
-                replayInfo.setReplayMessage("欢迎第六位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
-                QQList.add(messageInfo.getQq());
-                rouletteDuel.put(messageInfo.getGroupId(),QQList);
-            }
-            default -> replayInfo.setReplayMessage(messageInfo.getName() + "，参赛人数已满，请等待下一场参赛吧");
-        }
+        rouletteDuel.put(messageInfo.getGroupId(),QQList);
+        replayInfo.setReplayMessage("报名完成，可以开始对决了");
         return replayInfo;
     }
 
@@ -200,7 +199,8 @@ public class RouletteService {
             group.getOrFail(QQList.get(5)).mute(muted);
             replayInfo.setReplayMessage("子弹炸膛了！博士！您还好吧？");
         }else {
-            replayInfo.setReplayMessage("亲爱的"+replayInfo.getQq()+"，永别了，安息吧......");
+            replayInfo.setAT(replayInfo.getQq());
+            replayInfo.setReplayMessage("，永别了，安息吧......");
         }
         rouletteDuel.remove(messageInfo.getGroupId());
         return replayInfo;
@@ -209,7 +209,7 @@ public class RouletteService {
     @AngelinaGroup(keyWords = {"轮盘对决结束"}, description = "结束轮盘对决")
     public ReplayInfo closeRoulette(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        rouletteInfo.remove(messageInfo.getGroupId());
+        rouletteDuel.remove(messageInfo.getGroupId());
         replayInfo.setReplayMessage("轮盘对决已结束");
         return replayInfo;
     }
@@ -217,7 +217,7 @@ public class RouletteService {
     @AngelinaGroup(keyWords = {"轮盘赌结束"}, description = "结束轮盘赌")
     public ReplayInfo closeRouletteDuel(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        rouletteDuel.remove(messageInfo.getGroupId());
+        rouletteInfo.remove(messageInfo.getGroupId());
         replayInfo.setReplayMessage("轮盘赌已结束");
         return replayInfo;
     }

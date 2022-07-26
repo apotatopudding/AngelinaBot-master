@@ -54,7 +54,7 @@ public class AgentService {
     private OperatorInfoMapper operatorInfoMapper;
 
 
-    @AngelinaGroup(keyWords = {"单抽", "抽卡"}, description = "文字单次模拟抽卡")
+    @AngelinaGroup(keyWords = {"单抽"}, description = "文字单次模拟抽卡")
     public ReplayInfo chouKa(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<String> args = messageInfo.getArgs();

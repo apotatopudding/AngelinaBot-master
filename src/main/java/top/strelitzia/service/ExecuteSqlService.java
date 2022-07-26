@@ -58,12 +58,10 @@ public class ExecuteSqlService {
 
     @AngelinaGroup(keyWords = {"群发消息"})
     public ReplayInfo sendGroupMessage(MessageInfo messageInfo) {
-
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
         boolean b = AdminUtil.getSqlAdmin(messageInfo.getQq(), admins);
-        String s = "您没有群发消息权限";
         if (b) {
-            ReplayInfo replayInfo = new ReplayInfo();
             if (messageInfo.getArgs().size() > 1) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 1; i < messageInfo.getArgs().size(); i++) {
@@ -71,19 +69,24 @@ public class ExecuteSqlService {
                 }
                 replayInfo.setReplayMessage(sb.toString());
             }
-            for (String url: messageInfo.getImgUrlList()) {
-                replayInfo.setReplayImg(url);
-            }
-
             for (Long groupId: MiraiFrameUtil.messageIdMap.keySet()) {
+                List<String> imgUrlList = messageInfo.getImgUrlList();
+                for (String url: imgUrlList) {
+                    replayInfo.setReplayImg(url);
+                }
                 replayInfo.setGroupId(groupId);
                 replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(groupId));
                 sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.getReplayImg().clear();
             }
-            return null;
+            replayInfo.getReplayImg().clear();
+            replayInfo.setReplayMessage(null);
+            replayInfo.getReplayImg().clear();
+            return replayInfo;
+        }else {
+            replayInfo.setReplayMessage("您没有群发消息权限");
         }
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        replayInfo.setReplayMessage(s);
         return replayInfo;
     }
+
 }

@@ -44,7 +44,7 @@ public class GuessOperator {
 
     private static final Set<Long> groupList = new HashSet<>();
 
-    @AngelinaGroup(keyWords = {"猜干员"})
+    @AngelinaGroup(keyWords = {"猜干员"},description = "干员竞猜活动")
     public ReplayInfo guessOperator(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());

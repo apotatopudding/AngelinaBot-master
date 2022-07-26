@@ -6,6 +6,7 @@
         <result column="integral" property="integral" jdbcType="INTEGER"/>
         <result column="group_id" property="groupId" jdbcType="INTEGER"/>
         <result column="QQ" property="QQ" jdbcType="INTEGER"/>
+        <result column="sign_count" property="signCount" jdbcType="INTEGER"/>
     </resultMap>
 
     <!--  根据姓名查询积分  -->
@@ -64,4 +65,37 @@
         integral = integral - 10
     </update>
 
+    <!--  插入新qq，若已存在，则更新今日签到次数  -->
+    <update id="updateByQQ">
+        INSERT INTO a_integral (qq, name, sign_count)
+        VALUES
+        (#{qq,jdbcType=VARCHAR}, #{name}, 1)
+        ON CONFLICT(qq)
+        DO update set
+        name = #{name},
+        sign_count = 1
+    </update>
+
+    <!--  根据QQ查询当日签到  -->
+    <select id="selectDayCountByQQ" resultType="java.lang.Integer">
+        SELECT
+        sign_count
+        FROM
+        a_integral
+        WHERE
+        QQ = #{QQ,jdbcType=INTEGER}
+    </select>
+
+    <!--  清空当天签到数量  -->
+    <update id="cleanSignCount">
+        UPDATE a_integral SET sign_count = 0;
+    </update>
+
+    <!--  根据QQ查询积分  -->
+    <select id="selectBySwitch" resultType="java.lang.Integer">
+        SELECT
+        integral
+        FROM
+        a_special_switch
+    </select>
 </mapper>

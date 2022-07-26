@@ -65,7 +65,6 @@ public class ArknightsBattleground {
     public ReplayInfo beginBattleground(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         BattleGroundGroupInfo battleGroundGroupInfo = new BattleGroundGroupInfo();
-        BattleGroundInfo battleGroundInfo = new BattleGroundInfo();
         if (battleGroundGroup.containsKey(messageInfo.getGroupId())) {
             replayInfo.setReplayMessage("绝地作战还未结束，暂不可开启新局");
             return replayInfo;
@@ -127,11 +126,18 @@ public class ArknightsBattleground {
                 participantList.add(newBattleGroundInfo);
                 replayInfo.setReplayMessage(recall.getName()+"报名成功，还需"+ (10-i) + "人即可开始");
                 if(i==10){
-                    replayInfo.setReplayMessage("报名完毕，游戏开始！");
+                    replayInfo.setReplayMessage("报名完毕，正在布置战场...");
                 }
                 sendMessageUtil.sendGroupMsg(replayInfo);
                 replayInfo.setReplayMessage(null);
             }
+        }
+        //再次查询积分情况，如果积分被提前花费则会开启失败
+        integral = this.integralMapper.selectByQQ(messageInfo.getQq());
+        if (integral < 10){
+            replayInfo.setReplayMessage("您的积分已经不足以开启绝地作战，可能是您提前花掉了积分，绝地作战开启失败");
+            battleGroundGroup.remove(messageInfo.getGroupId());
+            return replayInfo;
         }
         //把list中记录的QQ注入数据库
         for(BattleGroundInfo battleGroundInfo1 :participantList){
@@ -143,15 +149,15 @@ public class ArknightsBattleground {
         battleGroundGroup.put(messageInfo.getGroupId(),battleGroundGroupInfo);
         this.integralMapper.minusTenPointsByGroupId(messageInfo.getGroupId(),messageInfo.getQq());
         TextLine textLine = new TextLine(100);
-        textLine.addString("请各位参与人自行选择区域前往");
+        textLine.addString("绝地作战正式开始");
         textLine.nextLine();
-        textLine.addString("【私聊琴柳：「前往  XX（地点）」】");
+        textLine.addString("【请私聊琴柳：「前往  XX（地点）」】");
         textLine.nextLine();
         textLine.addString("【或者：前往 X (地点序号)】");
         textLine.nextLine();
         textLine.addString("『注意：");
         textLine.nextLine();
-        textLine.addString("每一块区域前往需要十秒，请各位合理规划时间』");
+        textLine.addString("每个动作（前往和搜索）需要十秒，请各位合理规划时间』");
         textLine.nextLine();
         textLine.nextLine();
         textLine.addString("三级区域为：");
@@ -337,51 +343,51 @@ public class ArknightsBattleground {
                     //根据干员职业和星级来获取数据
                     switch (operatorInfo.getOperatorClass()) {
                         case 1 -> {//className = "先锋";
-                            Integer value = healthPoints + operatorInfo.getOperatorRarity();
+                            Integer value = healthPoints + operatorInfo.getOperatorRarity() * 10;
                             Integer bloodValue = health + operatorInfo.getOperatorRarity();
                             battleGroundInfo.setHealthPoints(value);
                             battleGroundInfo.setHealth(bloodValue);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() + " 点生命上限");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 10 + " 点生命上限");
                         }
                         case 2 -> {//className = "近卫";
-                            Integer value = physicsAttack + operatorInfo.getOperatorRarity();
+                            Integer value = physicsAttack + operatorInfo.getOperatorRarity() * 10;
                             battleGroundInfo.setPhysicsAttack(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() + " 点物理攻击");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 10 + " 点物理攻击");
                         }
                         case 3 -> {//className = "重装";
-                            Integer value = physicsArmor + operatorInfo.getOperatorRarity() * 10;
+                            Integer value = physicsArmor + operatorInfo.getOperatorRarity() * 50;
                             battleGroundInfo.setPhysicsArmor(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() * 10 + " 点物理护甲");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 50 + " 点物理护甲");
                         }
                         case 4 -> {//className = "狙击";
-                            Integer value = realDamage + operatorInfo.getOperatorRarity();
+                            Integer value = realDamage + operatorInfo.getOperatorRarity()* 10;
                             battleGroundInfo.setRealDamage(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() + " 点物理护甲");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 10 + " 点真实伤害");
                         }
                         case 5 -> {//className = "术士";
-                            Integer value = magicAttack + operatorInfo.getOperatorRarity();
+                            Integer value = magicAttack + operatorInfo.getOperatorRarity()* 10;
                             battleGroundInfo.setMagicAttack(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() + " 点魔法攻击");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 10 + " 点魔法攻击");
                         }
                         case 6 -> {//className = "辅助";
-                            Integer value = magicArmor + operatorInfo.getOperatorRarity() * 10;
+                            Integer value = magicArmor + operatorInfo.getOperatorRarity() * 50;
                             battleGroundInfo.setMagicArmor(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() * 10 + " 点魔法攻击");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 50 + " 点魔法护甲");
                         }
                         case 7 -> {//className = "医疗";
-                            int value = health + operatorInfo.getOperatorRarity() * 10;
-                            int realValue = operatorInfo.getOperatorRarity() * 10;
+                            int value = health + operatorInfo.getOperatorRarity() * 50;
+                            int realValue = operatorInfo.getOperatorRarity() * 50;
                             if (value > healthPoints) {
                                 realValue = healthPoints - health;
                                 value = healthPoints;
                             }
                             battleGroundInfo.setHealth(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您回复了 " + realValue + " 点生命");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您回复了 " + realValue + " 点生命");
                         }
                         default -> {//className = "特种";
-                            Integer value = reduceDamage + operatorInfo.getOperatorRarity();
+                            Integer value = reduceDamage + operatorInfo.getOperatorRarity()* 10;
                             battleGroundInfo.setReduceDamage(value);
-                            replayInfo.setReplayMessage("您遇到了干员 " + operatorInfo.getCodeName() + ",ta为您提供了 " + operatorInfo.getOperatorRarity() + " 点伤害减免");
+                            replayInfo.setReplayMessage("您遇到了干员 " + name + ",ta为您提供了 " + operatorInfo.getOperatorRarity()* 10 + " 点伤害减免");
                         }
                     }
                 }else {
@@ -594,8 +600,13 @@ public class ArknightsBattleground {
 
     //查询当前属性值
     @AngelinaGroup(keyWords = {"绝地查询"}, description = "当前个人属性查询")
+    @AngelinaFriend(keyWords = {"绝地查询"}, description = "当前个人属性查询")
     public ReplayInfo personalQuery(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        if( ! battleGroundGroup.containsKey(messageInfo.getGroupId())){
+            replayInfo.setReplayMessage("要先开始绝地作战哦");
+            return replayInfo;
+        }
         if(messageInfo.getArgs().size()>1){
             String query = messageInfo.getArgs().get(1);
             if(query.equals("属性")){
@@ -628,6 +639,72 @@ public class ArknightsBattleground {
         }
         return replayInfo;
     }
+
+    @AngelinaGroup(keyWords = {"绝地游戏描述"}, description = "当前个人属性查询")
+    public ReplayInfo battleDescription(MessageInfo messageInfo){
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        TextLine textLine = new TextLine(100);
+        textLine.addString("绝地作战分为三部分：");
+        textLine.nextLine();
+        textLine.nextLine();
+        textLine.addString("一、\t开局报名阶段");
+        textLine.nextLine();
+        textLine.addString("报名阶段由发起人发送“XX（呼叫词）开启绝地作战”主动开启");
+        textLine.nextLine();
+        textLine.addString("当发起人成功发起绝地作战后，玩家可以发送“报名”来加入游戏。");
+        textLine.nextLine();
+        textLine.nextLine();
+        textLine.addString("发起人需要花费十点积分，如果积分不足则不能开启游戏，报名完成前积分不扣除，开始游戏则扣除积分。");
+        textLine.nextLine();
+        textLine.addString("需要十名玩家参与才可开启游戏。如果报名阶段一分钟内没有人发起报名，游戏就会");
+        textLine.nextLine();
+        textLine.addString("关闭。报名结束后，机器人将会发送开始游戏通知，则进入跑图搜宝阶段。");
+        textLine.nextLine();
+        textLine.nextLine();
+        textLine.addString("二、\t跑图搜宝阶段");
+        textLine.nextLine();
+        textLine.addString("跑图搜宝阶段为临时会话模式，在游戏刚开始时需要先发送一次“前往 X (地点序号或");
+        textLine.nextLine();
+        textLine.addString("地点名皆可)”来前往泰拉地图作战区。");
+        textLine.nextLine();
+        textLine.addString("在到达后可以进行发送“搜索”进行装备搜集。");
+        textLine.nextLine();
+        textLine.nextLine();
+        textLine.addString("在搜集途中，如果同地图有人也在进行搜宝，则有一定概率发生战斗。同地图人员越多，");
+        textLine.nextLine();
+        textLine.addString("搜集遭遇战斗概率越大。每隔三分钟，则会有两个区域进入戒严模式，同时对区域地图");
+        textLine.nextLine();
+        textLine.addString("上的所有人发出驱逐通知，三十秒后还未离开的人员则会被派出的治安管理队强行击杀。");
+        textLine.nextLine();
+        textLine.addString("同时，已经进入戒严模式的地区也将禁止任何人员再次进入。卡西米尔由于正在策划卡");
+        textLine.nextLine();
+        textLine.addString("西米尔对抗赛，将会始终欢迎所有人前往，此地治安官将会永远不会派出治安管理队。");
+        textLine.nextLine();
+        textLine.addString("当除了卡西米尔区域以外的所有区域都进入戒严状态或者存活人数仅有三人以下时，将");
+        textLine.nextLine();
+        textLine.addString("会进入卡西米尔对抗赛阶段");
+        textLine.nextLine();
+        textLine.nextLine();
+        textLine.addString("三、\t卡西米尔对抗赛阶段");
+        textLine.nextLine();
+        textLine.addString("卡西米尔对抗赛为群聊模式，进入对抗赛以后会为全体人员发送邀请函邀请观看。");
+        textLine.nextLine();
+        textLine.addString("尚且存活的人员可以发送“XX（呼叫词）出击”来对任意一位存活人员发起攻击。");
+        textLine.nextLine();
+        textLine.nextLine();
+        textLine.addString("在对抗赛期间对抗赛官方将会为所有参与人员提供高强度的弩箭，每位先手攻击人员将");
+        textLine.nextLine();
+        textLine.addString("会获得一定真实伤害加成，同时，在搜宝阶段获得的所有真实伤害将会在第一轮攻击时全部打出。");
+        textLine.nextLine();
+        textLine.addString("对抗赛的前三名将会分别获得五分，三分和一分的积分奖励。");
+        textLine.nextLine();
+        textLine.addString("注意：任意一次对战中同归于尽的两人，以先手攻击的人作为当次战斗的胜利方");
+        replayInfo.setReplayImg(textLine.drawImage());
+        return replayInfo;
+    }
+
+
+
 
 
     /**
@@ -719,12 +796,21 @@ public class ArknightsBattleground {
             Integer area = allList.get(Num);
             allList.remove(Num);
             List<Long> sameAreaList = battleGroundMapper.selectQQBySameArea(groupId,area);
+            //把删掉的地点编号加入已关闭区域
+            closeArea.add(area);
+            battleGroundGroupInfo.setCloseArea(closeArea);
+            battleGroundGroup.put(groupId,battleGroundGroupInfo);
+            //给所有在毒圈里的人发消息
             for (Long sameAreaQQ : sameAreaList) {
                 Member member = group.getOrFail(sameAreaQQ);
-                member.sendMessage("你的位置暴露了，治安管理队将在三十秒后对你发起攻击，赶快离开");
-                closeArea.add(area);
-                battleGroundGroupInfo.setCloseArea(closeArea);
-                battleGroundGroup.put(groupId,battleGroundGroupInfo);
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append("你的位置暴露了，治安管理队将在三十秒后对你发起攻击，赶快离开\n" +
+                        "尚且安全的地点有：\n");
+                for(Integer areaList :allList){
+                    String closeString = atlas.get(areaList);
+                    stringBuilder.append(areaList).append("、").append(closeString).append("\n");
+                }
+                member.sendMessage(stringBuilder.toString());
             }
         }
         //延时三十秒,再次检索地区，在地区内的所有人生命值归零
@@ -737,6 +823,10 @@ public class ArknightsBattleground {
             List<Long> sameAreaList = battleGroundMapper.selectQQBySameArea(groupId,area);
             for ( Long sameAreaQQ : sameAreaList ) {
                 BattleGroundInfo battleGroundInfo  = battleGroundMapper.selectInfoByGroupAndQQ(groupId,sameAreaQQ);
+                //跳过所有已死的人
+                if(battleGroundInfo.getHealth() == 0){
+                    break;
+                }
                 battleGroundInfo.setHealth(0);
                 battleGroundInfo.setDefeatedBy("治安管理队");
                 battleGroundMapper.updateInfoByGroupAndQQ(battleGroundInfo);
@@ -806,7 +896,7 @@ public class ArknightsBattleground {
         int harm ;
         //当决斗开始时，先手者将获得十点真实伤害加成，然后真伤对射
         if(alreadyBegan){
-            realDamage = realDamage + 10;//先手者将获得十点真实伤害加成
+            realDamage = realDamage + 50;//先手者将获得五十点真实伤害加成
             duelHealth = duelHealth - (realDamage-duelReduceDamage);
             health = health - (duelRealDamage-reduceDamage);
             replayInfo.setReplayMessage("双方发起了激烈的弩箭对射，"+replayInfo.getName()+"给对方造成了"+realDamage+"点破甲伤害，受到了"+duelRealDamage+"点破甲伤害");
@@ -968,7 +1058,7 @@ public class ArknightsBattleground {
             Member member = group.getOrFail(duel);
             String replayMessage = "你遭到了"+ name +"的攻击，剩余"+ duelHealth +"点生命值";
             member.sendMessage(new PlainText(replayMessage));
-            replayInfo.setReplayMessage("你和"+ name +"展开了交战，你剩余"+ health +"点生命值");
+            replayInfo.setReplayMessage("你和"+ duelName +"展开了交战，你剩余"+ health +"点生命值");
         }
         return  replayInfo;
     }

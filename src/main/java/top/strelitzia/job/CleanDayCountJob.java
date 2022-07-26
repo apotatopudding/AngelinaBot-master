@@ -11,6 +11,7 @@ import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.model.TextLine;
 import top.angelinaBot.util.MiraiFrameUtil;
 import top.angelinaBot.util.SendMessageUtil;
+import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.dao.TarotMapper;
 import top.strelitzia.dao.UserFoundMapper;
 
@@ -37,6 +38,9 @@ public class CleanDayCountJob {
     @Autowired
     private TarotMapper tarotMapper;
 
+    @Autowired
+    private IntegralMapper integralMapper;
+
     public CleanDayCountJob() {
     }
 
@@ -45,8 +49,16 @@ public class CleanDayCountJob {
     @Async
     public void cleanDayCountJob() {
         userFoundMapper.cleanTodayCount();
-        tarotMapper.cleanTarotCount();
         log.info("{}每日抽卡数清空", new Date());
+    }
+
+    //每天零点执行的任务
+    @Scheduled(cron = "${scheduled.dayJob}")
+    @Async
+    public void DayJob() {
+        integralMapper.cleanSignCount();
+        tarotMapper.cleanTarotCount();
+        log.info("{}每日零点任务清空", new Date());
     }
 
     @Scheduled(cron = "${scheduled.exterminateJob}")

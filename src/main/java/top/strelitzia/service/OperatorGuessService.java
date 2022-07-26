@@ -11,8 +11,8 @@ import top.angelinaBot.model.TextLine;
 import top.strelitzia.dao.AdminUserMapper;
 import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.dao.NickNameMapper;
-import top.strelitzia.dao.OperatorGuessMapper;
-import top.strelitzia.model.OperatorGuessInfo;
+import top.strelitzia.arknightsDao.OperatorInfoMapper;
+import top.strelitzia.model.OperatorBasicInfo;
 import top.strelitzia.util.AdminUtil;
 
 import java.util.*;
@@ -22,7 +22,7 @@ import java.util.*;
 public class OperatorGuessService {
 
     @Autowired
-    private OperatorGuessMapper operatorGuessMapper;
+    private OperatorInfoMapper operatorInfoMapper;
 
     @Autowired
     private NickNameMapper nickNameMapper;
@@ -31,10 +31,10 @@ public class OperatorGuessService {
     private IntegralMapper integralMapper;
 
     @Autowired
-    AdminUserMapper adminUserMapper;
+    private AdminUserMapper adminUserMapper;
 
     //选出的干员map表
-    private  static final Map<Long, List<Integer>> operatorSelectInfo =new HashMap<>();
+    private  static final Map<Long, List<String>> operatorSelectInfo =new HashMap<>();
     //猜题信息
     private  static final Map<Long,List<Integer>> operatorSelect =new HashMap<>();
 
@@ -48,16 +48,19 @@ public class OperatorGuessService {
         if(topicNum > 99){
             replayInfo.setReplayMessage("博士，这间屋子容不下那么多人的啦");
             return replayInfo;
+        }else if(topicNum < 1) {
+            replayInfo.setReplayMessage("博士？");
+            return replayInfo;
         }
-        List<Integer> operatorList = new ArrayList<>();
+        List<String> operatorList = new ArrayList<>();
         if (!(operatorSelectInfo.get(messageInfo.getGroupId()) == null)){
             replayInfo.setReplayMessage("博士，这场茶话会还没有结束，我们还需要等待嘉宾们到达哦");
             return replayInfo;
         }else{
-            for (int i = 0;i<topicNum;i++){
-                OperatorGuessInfo idInfo = this.operatorGuessMapper.getOperatorName();
-                Integer Id = idInfo.getOperatorId();
-                operatorList.add(Id);
+            List<String> allOperator = operatorInfoMapper.getAllOperator();
+            for (int i = 0; i< topicNum; i++){
+                String name = allOperator.get(new Random().nextInt(allOperator.size()));
+                operatorList.add(name);
             }
             operatorSelectInfo.put(messageInfo.getGroupId(),operatorList);
             replayInfo.setReplayMessage("博士，我和风笛邀请了几位罗德岛干员来参加我们的下午茶聚会，他们还未到达，博士可以试着猜猜是谁要来参加我们的茶会呢" +
@@ -73,7 +76,7 @@ public class OperatorGuessService {
             replayInfo.setReplayMessage("博士别急，心急吃不了甜司康饼，还不能和我狞笑");
             return replayInfo;
         }
-        List<Integer> operatorList = operatorSelectInfo.get(messageInfo.getGroupId());
+        List<String> operatorList = operatorSelectInfo.get(messageInfo.getGroupId());
         if (operatorSelect.get(messageInfo.getGroupId()) == null){
             //前面是题号，后面是尝试次数
             List<Integer> operatorSelectList =new ArrayList<>(Arrays.asList(0,0));
@@ -82,6 +85,7 @@ public class OperatorGuessService {
         List<Integer> operatorSelectList = operatorSelect.get(messageInfo.getGroupId());
         Integer topicNum = operatorSelectList.get(0);
         Integer tryNum = operatorSelectList.get(1);
+        log.info(operatorList.get(topicNum));
         if (messageInfo.getArgs().size() > 1) {
             String answerName = messageInfo.getArgs().get(1);//取得回答的答案
             String realName = nickNameMapper.selectNameByNickName(answerName);
@@ -90,14 +94,16 @@ public class OperatorGuessService {
             }
             // 利用输入的信息进行比对，依次输出比对结果是或否
             boolean answer =false, DrawName = false, OperatorRarity =false, sex = false, ComeFrom = false, Race = false, Infection = false, profession = false;
-            OperatorGuessInfo operatorInfoGuess = this.operatorGuessMapper.getOperatorInfoByName(answerName);
-            Integer Id = operatorList.get(topicNum);//取得对应题号的干员ID
-            OperatorGuessInfo operatorName = this.operatorGuessMapper.getOperatorInfoById(Id);
-            OperatorGuessInfo operatorInfoTrue = this.operatorGuessMapper.getOperatorInfoByName(operatorName.getOperatorName());
             //判断是否猜中
-            if(operatorInfoGuess.getOperatorName().equals(operatorInfoTrue.getOperatorName())){
+            if(answerName.equals(operatorList.get(topicNum))){
                 answer =true;
             }else{
+                OperatorBasicInfo operatorInfoGuess = this.operatorInfoMapper.getOperatorInfoByName(answerName);
+                if (operatorInfoGuess == null){
+                    replayInfo.setReplayMessage("您说的这个干员我不认识呢，是刚入职的新干员吗？");
+                    return replayInfo;
+                }
+                OperatorBasicInfo operatorInfoTrue = this.operatorInfoMapper.getOperatorInfoByName(operatorList.get(topicNum));//取得对应题号的干员信息
                 //判断干员档案各个条件是否相同
                 if(operatorInfoGuess.getDrawName().equals(operatorInfoTrue.getDrawName())){
                     DrawName =true;
@@ -114,16 +120,19 @@ public class OperatorGuessService {
                 if(operatorInfoGuess.getRace().equals(operatorInfoTrue.getRace())){
                     Race =true;
                 }
-                if(operatorInfoGuess.getInfection().equals(operatorInfoTrue.getInfection())){
+                //由于非感染者本身包含感染者字符，所以只用非感染者作为判定条件，未知直接判定为不符合
+                //当都包含非感染者或者都不包含非感染者时作为通过，余下只为一非感染和一感染
+                if( (operatorInfoGuess.getInfection().contains("非感染者") && operatorInfoTrue.getInfection().contains("非感染者")) ||
+                        (!operatorInfoGuess.getInfection().contains("非感染者") && !operatorInfoTrue.getInfection().contains("非感染者")) ){
                     Infection =true;
                 }
-                if(operatorInfoGuess.getProfession().equals(operatorInfoTrue.getProfession())){
+                if(operatorInfoGuess.getOperatorClass().equals(operatorInfoTrue.getOperatorClass())){
                     profession =true;
                 }
             }
             // 当结果为ture，topicNum+1并返回setTopic
             if(answer) {
-                Integer integral = this.integralMapper.selectByName(messageInfo.getName());
+                Integer integral = this.integralMapper.selectByQQ(messageInfo.getQq());
                 //猜谜答对一次的人加一分
                 try{integral = integral + 1;
                 }catch (NullPointerException e){
@@ -132,11 +141,18 @@ public class OperatorGuessService {
                 }
                 this.integralMapper.integralByGroupId(messageInfo.getGroupId(), messageInfo.getName(), messageInfo.getQq(), integral);
                 //更新题号和猜测次数
-                operatorSelectList.set(0,topicNum + 1);
-                operatorSelectList.set(1,0);
-                operatorSelect.put(messageInfo.getGroupId(),operatorSelectList);
-                replayInfo.setReplayMessage("真棒"+messageInfo.getName()+"博士，恭喜您回答正确，正是干员"+operatorName.getOperatorName()+"呢，看，他已经加入茶会中了" +
-                        "\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
+                if(topicNum == operatorList.size()-1){
+                    operatorSelectInfo.remove(messageInfo.getGroupId());
+                    operatorSelect.remove(messageInfo.getGroupId());
+                    replayInfo.setReplayMessage("真棒"+messageInfo.getName()+"博士，恭喜您回答正确，正是干员"+operatorList.get(topicNum)+"呢，看，他已经加入茶会中了" +
+                            "\n嘉宾已经全部到齐，美妙的茶话会开始了");
+                }else {
+                    operatorSelectList.set(0,topicNum + 1);
+                    operatorSelectList.set(1,0);
+                    operatorSelect.put(messageInfo.getGroupId(),operatorSelectList);
+                    replayInfo.setReplayMessage("真棒"+messageInfo.getName()+"博士，恭喜您回答正确，正是干员"+operatorList.get(topicNum)+"呢，看，他已经加入茶会中了" +
+                            "\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
+                }
             }else {
                 //当结果为false，tryNum+1并返回answerTopic继续抢答
                 TextLine textLine = new TextLine(100);
@@ -187,7 +203,7 @@ public class OperatorGuessService {
                     operatorSelectList.set(1,0);
                     operatorSelect.put(messageInfo.getGroupId(),operatorSelectList);
                     //replayInfo.clear();
-                    replayInfo.setReplayMessage("都不对哦博士，你看他来了，是干员" + operatorName.getOperatorName() + "呢" +
+                    replayInfo.setReplayMessage("都不对哦博士，你看他来了，是干员"+operatorList.get(topicNum)+"呢"+
                             "\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
                     replayInfo.getReplayImg().clear();
                 }

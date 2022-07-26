@@ -25,52 +25,10 @@ public class test {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"a他"}, description = "测试")
-    public ReplayInfo aMe(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        Long a = null;
-        if (messageInfo.getArgs().size() > 1) {
-            a = Long.valueOf(messageInfo.getArgs().get(1));
-        }
-        replayInfo.setAT(a);
-        return replayInfo;
-    }
     @AngelinaGroup(keyWords = {"禁言自己"}, description = "测试")
     public ReplayInfo nudeSelf(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         replayInfo.setReplayMessage("臣妾做不到啊");
-        return replayInfo;
-    }
-    @AngelinaGroup(keyWords = {"贴贴"}, description = "测试")
-    public ReplayInfo newAudio(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        String folderPath = "runFile/Audio/qinLiuGan";
-        //D:/新建文件夹/angelina/runFile/wallPaper
-        //F:/new folder/AngelinaBot-master/AngelinaBot-master/runFile/wallPaper
-        File folder = new File(folderPath);
-        File[] files = folder.listFiles();
-        if(folder.isDirectory() && files.length != 0) {
-            int picNum = files.length;
-            int selectPicIndex = (int) (Math.random()*picNum);
-            File selectFile = files[selectPicIndex];
-            String oriFileName = selectFile.getAbsolutePath();
-            replayInfo.setReplayAudio(new File(oriFileName));
-        }else {log.info("引用了一个空文件或空文件夹");}
-        return replayInfo;
-    }
-    @AngelinaGroup(keyWords = {"我爱你"}, description = "测试")
-    public ReplayInfo caoAudio(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        String folderPath = "runFile/Audio/cao/cao.amr";
-        replayInfo.setReplayAudio(new File(folderPath));
-        return replayInfo;
-    }
-
-    @AngelinaGroup(keyWords = {"群主笨蛋"}, description = "测试")
-    public ReplayInfo fafafafa(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        String folderPath = "runFile/Audio/1";
-        replayInfo.setReplayAudio(new File(folderPath));
         return replayInfo;
     }
 
@@ -81,7 +39,7 @@ public class test {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"转换"}, description = "测试")
+    //@AngelinaGroup(keyWords = {"转换"}, description = "测试")
     public ReplayInfo changeFormat(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         File sourceFile = new File("runFile/Audio/source.mp3");//输入
@@ -103,6 +61,7 @@ public class test {
         replayInfo.setPermission(true);
         return replayInfo;
     }
+
     //@AngelinaGroup(keyWords = {"时间转换"}, description = "测试")
     public ReplayInfo timeChangeFormit(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);

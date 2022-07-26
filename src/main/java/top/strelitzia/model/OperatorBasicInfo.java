@@ -28,9 +28,7 @@ public class OperatorBasicInfo {
     private String archives4;
     private String promotionInfo;
 
-    public Integer getOperatorRarity() {
-        return operatorRarity;
-    }
+    public Integer getOperatorRarity() { return operatorRarity; }
 
     public void setOperatorRarity(Integer operatorRarity) {
         this.operatorRarity = operatorRarity;
@@ -61,6 +59,7 @@ public class OperatorBasicInfo {
     }
 
     public String getDrawName() {
+        drawName = drawName.replace(" ","");
         return drawName;
     }
 
@@ -85,46 +84,52 @@ public class OperatorBasicInfo {
     }
 
     public String getSex() {
+        if(sex==null){
+            sex ="";
+        }else {
+            sex = sex.replace(" ","");
+        }
         return sex;
     }
 
-    public void setSex(String sex) {
-        this.sex = sex;
-    }
+    public void setSex(String sex) { this.sex = sex; }
 
     public String getComeFrom() {
+        if(comeFrom==null){
+            comeFrom ="";
+        }else {
+            comeFrom = comeFrom.replace(" ","");
+        }
         return comeFrom;
     }
 
-    public void setComeFrom(String comeFrom) {
-        this.comeFrom = comeFrom;
-    }
+    public void setComeFrom(String comeFrom) { this.comeFrom = comeFrom; }
 
-    public String getBirthday() {
-        return birthday;
-    }
+    public String getBirthday() { return birthday; }
 
-    public void setBirthday(String birthday) {
-        this.birthday = birthday;
-    }
+    public void setBirthday(String birthday) { this.birthday = birthday; }
 
     public String getRace() {
+        if(race==null){
+            race ="";
+        }else {
+            race = race.replace(" ","");
+        }
         return race;
     }
 
-    public void setRace(String race) {
-        this.race = race;
-    }
+    public void setRace(String race) { this.race = race; }
 
-    public Integer getHeight() {
-        return height;
-    }
+    public Integer getHeight() { return height; }
 
-    public void setHeight(Integer height) {
-        this.height = height;
-    }
+    public void setHeight(Integer height) { this.height = height; }
 
     public String getInfection() {
+        if(infection==null){
+            infection ="";
+        }else {
+            infection = infection.replace(" ","");
+        }
         return infection;
     }
 

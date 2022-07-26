@@ -9,7 +9,7 @@ import java.util.List;
 public interface IntegralMapper {
 
     //根据姓名查询积分
-    Integer selectByName(String name);
+    List<Integer> selectByName(String name);
 
     //根据QQ查询积分
     Integer selectByQQ(Long QQ);
@@ -25,5 +25,17 @@ public interface IntegralMapper {
 
     //扣除十点积分以开始绝地作战
     Integer minusTenPointsByGroupId(@Param("groupId") Long groupId,@Param("QQ") Long QQ);
+
+    //根据QQ查询当日签到
+    Integer selectDayCountByQQ(Long QQ);
+
+    //每日签到清空
+    Integer cleanSignCount();
+
+    //每日签到状态改变
+    Integer updateByQQ(@Param("qq") Long qq, @Param("name") String name);
+
+    //当日积分状态改变
+    Integer selectBySwitch();
 
 }
