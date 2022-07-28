@@ -26,21 +26,13 @@ public class TarotExplainService {
             String tarotCardId = messageInfo.getArgs().get(1);
             List<TarotCardInfo> tarotCardInfos = tarotCardMapper.selectTarotCardByID(tarotCardId);
             if (tarotCardInfos.size() > 0) {
-                TextLine textLine = new TextLine(100);
+                TextLine textLine = new TextLine(25);
                 for (TarotCardInfo tarotCardInfo:tarotCardInfos) {
                     textLine.addString("您咨询的卡牌为：" + tarotCardId);
                     textLine.nextLine();
                     textLine.addString("牌义：");
                     textLine.nextLine();
-                    textLine.addString("" + tarotCardInfo.getTarotCardMean1());
-                    textLine.nextLine();
-                    textLine.addString("" + tarotCardInfo.getTarotCardMean2());
-                    textLine.nextLine();
-                    textLine.addString("" + tarotCardInfo.getTarotCardMean3());
-                    textLine.nextLine();
-                    textLine.addString("" + tarotCardInfo.getTarotCardMean4());
-                    textLine.nextLine();
-                    textLine.addString("" + tarotCardInfo.getTarotCardMean5());
+                    textLine.addString("" + tarotCardInfo.getTarotCardMean());
                     textLine.nextLine();
                     textLine.addString("关键语：");
                     textLine.nextLine();
@@ -55,7 +47,7 @@ public class TarotExplainService {
                     textLine.addString("" + tarotCardInfo.getTarotCardReversePosition());
                     textLine.nextLine();
                 }
-                replayInfo.setReplayImg(textLine.drawImage());
+                replayInfo.setReplayImg(textLine.drawImage(50,true));
                 return replayInfo;
             }else{
                 replayInfo.setReplayMessage("您这可难倒我了，您说的这个卡牌名字我都不知道呢，您看看您是不是说错了");

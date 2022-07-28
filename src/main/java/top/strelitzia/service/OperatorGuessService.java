@@ -133,11 +133,11 @@ public class OperatorGuessService {
             // 当结果为ture，topicNum+1并返回setTopic
             if(answer) {
                 Integer integral = this.integralMapper.selectByQQ(messageInfo.getQq());
-                //猜谜答对一次的人加一分
-                try{integral = integral + 1;
+                //猜谜答对一次的人加五分
+                try{integral = integral + 5;
                 }catch (NullPointerException e){
                     //log.info(e.toString());
-                    integral = 1;
+                    integral = 5;
                 }
                 this.integralMapper.integralByGroupId(messageInfo.getGroupId(), messageInfo.getName(), messageInfo.getQq(), integral);
                 //更新题号和猜测次数

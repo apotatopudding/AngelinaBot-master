@@ -9,8 +9,6 @@ import top.angelinaBot.model.EventEnum;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.model.TextLine;
-import top.strelitzia.dao.IntegralMapper;
-import top.strelitzia.model.IntegralInfo;
 import top.strelitzia.util.PetPetUtil;
 
 import javax.imageio.ImageIO;
@@ -18,7 +16,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 import java.util.Random;
 
 @Slf4j
@@ -27,9 +24,6 @@ public class PetPetService {
 
     @Autowired
     private PetPetUtil petPetUtil;
-
-    @Autowired
-    private IntegralMapper integralMapper;
 
     @AngelinaEvent(event = EventEnum.NudgeEvent, description = "发送头像的摸头动图")
     @AngelinaGroup(keyWords = {"摸头", "摸我", "摸摸"}, description = "发送头像的摸头动图")
@@ -63,27 +57,10 @@ public class PetPetService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords =
-            {"口我",
-            "透透",
-            "透我",
-            "cao你妈",
-            "艹你妈",
-            "草你妈",
-            "我可以cao你吗",
-            "可以cao你吗",
-            "我可以操你吗",
-            "可以操你吗",
-            "我可以草你吗",
-            "可以草你吗",
-            "我可以艹你吗",
-            "可以艹你吗",
-            "cao我",
-            "草我",
-            "艹我"}, description = "禁言功能")
+    @AngelinaGroup(keyWords = {"口我","透透","透我","cao我","草我","艹我"}, description = "禁言功能")
     public ReplayInfo MuteSomeOne(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        replayInfo.setMuted((new Random().nextInt(30) + 1) * 60);
+        replayInfo.setMuted((new Random().nextInt(5) + 1) * 60);
         return replayInfo;
     }
 
@@ -93,7 +70,8 @@ public class PetPetService {
         replayInfo.setReplayMessage("欢迎" + messageInfo.getName()
                                     + "，在这段同行路上，我想成为您可以依赖的伙伴。"
                                     + "您可以随时通过【琴柳】呼唤我"
-                                    + "\n洁哥源码：https://github.com/Strelizia02/AngelinaBot");
+                                    + "\n洁哥源码：https://github.com/Strelizia02/AngelinaBot"
+                                    + "\n琴柳版源码：https://github.com/apotatopudding/AngelinaBot-master");
         return replayInfo;
     }
 
@@ -103,6 +81,10 @@ public class PetPetService {
         String folderPath = "runFile/Audio/qinLiuGan";
         File folder = new File(folderPath);
         File[] files = folder.listFiles();
+        if(files == null){
+            replayInfo.setReplayMessage("文件夹不存在，请检查文件夹");
+            return replayInfo;
+        }
         if(folder.isDirectory() && files.length != 0) {
             int picNum = files.length;
             int selectPicIndex = (int) (Math.random()*picNum);
@@ -129,28 +111,51 @@ public class PetPetService {
         return replayInfo;
     }
 
+
+
     @AngelinaGroup(keyWords = {"壁纸"}, description = "发送一张壁纸库的图片")
     public ReplayInfo GroupWallPaper(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if(messageInfo.getArgs().size()>1){
-            //如果输入了版本名字，则根据版本名字随机抽取图片
-            String path = messageInfo.getArgs().get(1);
-            String folderPath = "runFile/wallPaper/"+path;
-            File folder = new File(folderPath);
-            if (folder.isDirectory()){
-                log.info("folder:"+folder.getName());
+            if(messageInfo.getArgs().get(1).equals("列表")){
+                String folderPath = "runFile/wallPaper";
+                File folder = new File(folderPath);
                 File[] files = folder.listFiles();
-                if (files==null){
+                TextLine textLine = new TextLine();
+                textLine.addCenterStringLine("壁纸可选版本有：");
+                textLine.nextLine();
+                if (files == null){
                     replayInfo.setReplayMessage("读取出错，请联系琴柳机器人的运行者");
-                    log.error( folder.getName()+"文件夹内不存在文件" );
+                    log.error("目录下找不到任何文件夹");
                 }else {
-                    int selectPicIndex =new Random().nextInt (files.length);
-                    File selectFile = files[selectPicIndex];
-                    String oriFileName = selectFile.getAbsolutePath();
-                    replayInfo.setReplayImg(new File(oriFileName));
+                    for (File selectFolder : files) {
+                        if(selectFolder.isDirectory()) {
+                            textLine.addCenterStringLine(selectFolder.getName());
+                            textLine.nextLine();
+                        }
+                    }
+                    replayInfo.setReplayImg(textLine.drawImage(50,true));
                 }
             }else {
-                replayInfo.setReplayMessage("您选择的壁纸版本不存在");
+                //如果输入了版本名字，则根据版本名字随机抽取图片
+                String path = messageInfo.getArgs().get(1);
+                String folderPath = "runFile/wallPaper/" + path;
+                File folder = new File(folderPath);
+                if (folder.isDirectory()) {
+                    log.info("folder:" + folder.getName());
+                    File[] files = folder.listFiles();
+                    if (files == null) {
+                        replayInfo.setReplayMessage("读取出错，请联系琴柳机器人的运行者");
+                        log.error(folder.getName() + "文件夹内不存在文件");
+                    } else {
+                        int selectPicIndex = new Random().nextInt(files.length);
+                        File selectFile = files[selectPicIndex];
+                        String oriFileName = selectFile.getAbsolutePath();
+                        replayInfo.setReplayImg(new File(oriFileName));
+                    }
+                } else {
+                    replayInfo.setReplayMessage("您选择的壁纸版本不存在");
+                }
             }
         }else {
             //如果没输入，直接随机抽取文件夹下抽取一张图片
@@ -187,96 +192,25 @@ public class PetPetService {
         }
         return replayInfo;
     }
+
     @AngelinaGroup(keyWords = {"好图"}, description = "发送一张图库图片")
     public ReplayInfo GroupPicture(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         String folderPath = "runFile/picture";
         File folder = new File(folderPath);
         File[] files = folder.listFiles();
-        if(folder.isDirectory()) {
+        if(files == null){
+            replayInfo.setReplayMessage("文件夹不存在，请检查文件夹");
+            return replayInfo;
+        }
+        if(folder.isDirectory() && files.length != 0) {
             int picNum = files.length;
             int selectPicIndex = (int) (Math.random()*picNum);
             File selectFile = files[selectPicIndex];
             String oriFileName = selectFile.getAbsolutePath();
             replayInfo.setReplayImg(new File(oriFileName));
         }
-        return replayInfo;
-    }
-    @AngelinaGroup(keyWords = {"签到"}, description = "每日签到")
-    public ReplayInfo checkIn(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        int special =this.integralMapper.selectBySwitch();//特殊奖励查询
-        //查询当天是否已签到
-        Integer today = this.integralMapper.selectDayCountByQQ(messageInfo.getQq());
-        if(today == null) today = 0 ;
-        if (today < 1) {
-            Integer integral = this.integralMapper.selectByQQ(messageInfo.getQq());
-            if(integral == null) integral = 0 ;
-            int add = new Random().nextInt(3) + 1;//随机加1~3分
-            if(special!=0) add = special;//有特殊奖励时，加分改为特殊分
-            integral = integral + add;
-            this.integralMapper.integralByGroupId(messageInfo.getGroupId(),messageInfo.getName(),messageInfo.getQq(),integral);
-            replayInfo.setReplayMessage("每日签到成功，获得积分："+add+"分");
-            this.integralMapper.updateByQQ(messageInfo.getQq(), messageInfo.getName());//签到状态更新
-        }else {
-            replayInfo.setReplayMessage("您今日已签到，不可重复签到");
-        }
-        return replayInfo;
-    }
-
-
-
-    @AngelinaGroup(keyWords = {"查询积分榜"}, description = "积分榜查询")
-    public ReplayInfo inquireIntegral(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        if(messageInfo.getArgs().size()>1){
-            //以结果判定是不是数字，如果是数字，以QQ查询，如果不是，以名字查询
-            boolean result = messageInfo.getArgs().get(1).matches("[0-9]+");
-            if (!result){
-                String name = messageInfo.getArgs().get(1);
-                List<Integer> Integral = this.integralMapper.selectByName(name);
-                //判定信息是否为空
-                if(Integral.size()==0){
-                    replayInfo.setReplayMessage("积分榜里没有您要查询的信息呢，您看看您是不是写错了");
-                }else {
-                    String remind = "";
-                    if(Integral.size()>1){
-                        remind = "\n由于名字出现重复，可能存在查询不准确情况，请使用QQ查询";
-                    }
-                    replayInfo.setReplayMessage(name + "的积分为" + Integral + remind);
-                }
-            }else {
-                Long QQ = Long.valueOf(messageInfo.getArgs().get(1));
-                Integer Integral = this.integralMapper.selectByQQ(QQ);
-                //判定信息是否为空，空信息可能是因为名字为数字
-                if(Integral==null){
-                    //将QQ转换为名字进行二次查询，仍然查不到即没有
-                    String name = String.valueOf(QQ);
-                    List<Integer> nameIntegral = this.integralMapper.selectByName(name);
-                    if(nameIntegral.size()==0){
-                        replayInfo.setReplayMessage("积分榜里没有您要查询的信息呢，您看看您是不是写错了");
-                    }else{
-                        String remind = "";
-                        if(nameIntegral.size()>1){
-                            remind = "\n由于名字出现重复，可能存在查询不准确情况，请使用QQ查询";
-                        }
-                        replayInfo.setReplayMessage(name + "的积分为" + nameIntegral + remind);
-                    }
-                }else {
-                    replayInfo.setReplayMessage(QQ+"的积分为"+Integral);
-                }
-            }
-        }else {
-            StringBuilder s = new StringBuilder();
-            List<IntegralInfo> integralInfoList = this.integralMapper.selectFiveByName();
-            int i = 0;
-            for(IntegralInfo integralInfo : integralInfoList){
-                i = i + 1;
-                s.append("第").append(i).append("名为：").append(integralInfo.getName());
-                s.append("   他的积分为").append(integralInfo.getIntegral()).append("\n");
-            }
-            replayInfo.setReplayMessage(s.toString());
-        }
+        else {log.info("引用了一个空文件或空文件夹");}
         return replayInfo;
     }
 
@@ -368,9 +302,9 @@ public class PetPetService {
         textLine.addSpace(8);
         textLine.addString("*翻开第三张预言");
         textLine.nextLine();
-        textLine.addString("#下注 (选手) (编号)");
+        textLine.addString("#下注 (选手 编号)");
         textLine.addSpace(1);
-        textLine.addString("*远山小姐解牌 x(牌名)");
+        textLine.addString("*远山小姐解牌 X(牌名)");
         textLine.nextLine();
         textLine.addString("(下注命令与猜干员时回答干员名都无需bot名称)");
         replayInfo.setReplayImg(textLine.drawImage(50,true));

@@ -3,11 +3,7 @@
 <mapper namespace="top.strelitzia.dao.TarotCardMapper">
     <resultMap id="BaseResultMap" type="top.strelitzia.model.TarotCardInfo">
         <result column="tarot_card_id" property="tarotCardID" jdbcType="VARCHAR"/>
-        <result column="tarot_card_mean1" property="tarotCardMean1" jdbcType="VARCHAR"/>
-        <result column="tarot_card_mean2" property="tarotCardMean2" jdbcType="VARCHAR"/>
-        <result column="tarot_card_mean3" property="tarotCardMean3" jdbcType="VARCHAR"/>
-        <result column="tarot_card_mean4" property="tarotCardMean4" jdbcType="VARCHAR"/>
-        <result column="tarot_card_mean5" property="tarotCardMean5" jdbcType="VARCHAR"/>
+        <result column="tarot_card_mean" property="tarotCardMean" jdbcType="VARCHAR"/>
         <result column="tarot_card_keyword" property="tarotCardKeyword" jdbcType="VARCHAR"/>
         <result column="tarot_card_forward_position" property="tarotCardForwardPosition" jdbcType="VARCHAR"/>
         <result column="tarot_card_reverse_position" property="tarotCardReversePosition" jdbcType="VARCHAR"/>
@@ -15,7 +11,7 @@
 
     <select id="selectTarotCardByID" parameterType="java.lang.String" resultMap="BaseResultMap">
         SELECT
-        tarot_card_id, tarot_card_mean1 ,tarot_card_mean2 ,tarot_card_mean3 ,tarot_card_mean4 ,tarot_card_mean5 , tarot_card_keyword,tarot_card_forward_position, tarot_card_reverse_position
+        tarot_card_id, tarot_card_mean, tarot_card_keyword,tarot_card_forward_position, tarot_card_reverse_position
         FROM
             a_tarot_card
         WHERE

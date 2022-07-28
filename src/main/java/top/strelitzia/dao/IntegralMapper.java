@@ -35,7 +35,4 @@ public interface IntegralMapper {
     //每日签到状态改变
     Integer updateByQQ(@Param("qq") Long qq, @Param("name") String name);
 
-    //当日积分状态改变
-    Integer selectBySwitch();
-
 }

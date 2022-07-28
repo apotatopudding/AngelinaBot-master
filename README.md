@@ -26,11 +26,11 @@
 
 # 如何使用
 
-- [如何搭建一个自己的AngelinaBot](https://www.bilibili.com/video/BV1g341137oB)
+- [如何使用AngelinaBot](https://github.com/Strelizia02/AngelinaBot/wiki)
 
 - [如何使用AngelinaFrame编写一个自己的Bot](https://github.com/Strelizia02/AngelinaFrame/wiki)
 
-- [视频教程]()
+- [视频教程](https://www.bilibili.com/video/BV1g341137oB)
 
 - BUG反馈、问题求助：提issue或在QQ群【洁哥妙妙屋(691029037)】中私聊群主。
 

@@ -19,10 +19,14 @@ public interface GroupAdminInfoMapper {
 
     Integer insertGroupId(Long groupId);
 
-    Integer updatePictureAdmin(@Param("groupId") Long groupId, @Param("picture") Integer picture);
-
     Integer updateGroupAdmin(GroupAdminInfo groupAdminInfo);
 
     Integer existGroupId(@Param("groupId")Long groupId);
+
+    //查询当前群组特设积分状态
+    Integer selectBySetting(Long groupId);
+
+    //更新特设积分
+    Integer insertByGroupId(@Param("groupId")Long groupId,@Param("integral")Integer integral);
 
 }

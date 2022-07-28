@@ -4,6 +4,7 @@
     <resultMap id="BaseResultMap" type="top.strelitzia.model.GroupAdminInfo">
         <result column="group_id" property="groupId" jdbcType="BIGINT"/>
         <result column="found" property="found" jdbcType="INTEGER"/>
+        <result column="setup_integral" property="setupIntegral" jdbcType="INTEGER"/>
     </resultMap>
 
 
@@ -45,5 +46,23 @@
             `found` = #{found}
         where
             group_id = #{groupId}
+    </update>
+
+    <select id="selectBySetting" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT
+        setup_integral
+        FROM
+        a_group_admin
+        WHERE
+        group_id = #{groupId}
+    </select>
+
+    <update id="insertByGroupId">
+        INSERT INTO a_group_admin (group_id, setup_integral)
+        VALUES
+        (#{groupId,jdbcType=VARCHAR}, #{integral})
+        ON CONFLICT(group_id)
+        DO update set
+        setup_integral = #{integral}
     </update>
 </mapper>

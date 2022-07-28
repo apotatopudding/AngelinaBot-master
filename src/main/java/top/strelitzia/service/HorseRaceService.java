@@ -90,7 +90,6 @@ public class HorseRaceService {
                     break;
                 }
             }
-
             //判断是否已经下注，已经下注则跳出
             if(QQList.contains(recall.getQq())){
                 replayInfo.setReplayMessage("抱歉您已经下过注了，请耐心等待比赛完成吧");

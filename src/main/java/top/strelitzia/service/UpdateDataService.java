@@ -80,7 +80,7 @@ public class UpdateDataService {
 //    private String url = "https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData@master/zh_CN/gamedata/";
 //    private String url = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/";
 //    private String url = "http://vivien8261.gitee.io/arknights-bot-resource/gamedata/";
-    private String url = "https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/master/";
+    private final String url = "https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/master/";
 
     @AngelinaGroup(keyWords = {"更新"}, description = "尝试更新数据")
     @AngelinaFriend(keyWords = {"更新"}, description = "尝试更新数据")

@@ -1,7 +1,5 @@
 package top.strelitzia.model;
 
-import java.io.Serializable;
-
 /**
  * @author strelitzia
  * @Date 2022/05/03 14:38
@@ -9,6 +7,7 @@ import java.io.Serializable;
 public class GroupAdminInfo {
     private Long groupId;
     private Integer found;
+    private Long setupIntegral;
 
     public Long getGroupId() {
         return groupId;
@@ -25,4 +24,8 @@ public class GroupAdminInfo {
     public void setFound(Integer found) {
         this.found = found;
     }
+
+    public Long getSetupIntegral() { return setupIntegral; }
+
+    public void setSetupIntegral(Long setupIntegral) { this.setupIntegral = setupIntegral; }
 }

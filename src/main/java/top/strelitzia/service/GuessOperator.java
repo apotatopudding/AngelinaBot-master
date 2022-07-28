@@ -1,7 +1,6 @@
 package top.strelitzia.service;
 
 import lombok.extern.slf4j.Slf4j;
-import net.mamoe.mirai.contact.MemberPermission;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
@@ -50,11 +49,7 @@ public class GuessOperator {
         boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
         if (groupList.contains(messageInfo.getGroupId())) {
             replayInfo.setReplayMessage("本群正在进行猜干员，请查看消息记录");
-            return replayInfo;
-        } else if (messageInfo.getUserAdmin() == MemberPermission.MEMBER && !sqlAdmin) {
-            replayInfo.setReplayMessage("仅有本群群主和管理员有权限开启猜干员");
-            return replayInfo;
-        } else {
+        }else {
             //添加群组防止重复猜
             groupList.add(messageInfo.getGroupId());
             //默认是十道题
@@ -162,8 +157,8 @@ public class GuessOperator {
                 textLine.nextLine();
             }
             replayInfo.setReplayImg(textLine.drawImage());
-            return replayInfo;
         }
+        return replayInfo;
     }
 
     @AngelinaGroup(keyWords = {"重启猜干员"})
