@@ -1,7 +1,5 @@
 package top.strelitzia.service;
 
-import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
@@ -170,39 +168,36 @@ public class RouletteService {
         //查询次数决定能不能开始
         if(QQList.size() < 6){
             replayInfo.setReplayMessage("参赛人数还不足六人，还不能开始对决呢。");
-            return replayInfo;
-        }
-        //计算子弹位置设立随机数
-        int bullet = 0;
-        for (int i=0;i<6;i++){
-            bullet=bullet+new Random().nextInt(2);
-        }
-        switch (bullet) {
-            case 0 -> replayInfo.setQq(QQList.get(0));
-            case 1 -> replayInfo.setQq(QQList.get(1));
-            case 2 -> replayInfo.setQq(QQList.get(2));
-            case 3 -> replayInfo.setQq(QQList.get(3));
-            case 4 -> replayInfo.setQq(QQList.get(4));
-            default -> replayInfo.setQq(QQList.get(5));
-        }
-        //把获取到的禁言QQ带入禁言功能并且实现禁言
-        replayInfo.setMuted(5 * 60);
-        if(new Random().nextInt(100)>98){
-            Bot bot = Bot.getInstance(replayInfo.getLoginQQ());
-            Group group = bot.getGroupOrFail(replayInfo.getGroupId());
-            int muted = 60;
-            group.getOrFail(QQList.get(0)).mute(muted);
-            group.getOrFail(QQList.get(1)).mute(muted);
-            group.getOrFail(QQList.get(2)).mute(muted);
-            group.getOrFail(QQList.get(3)).mute(muted);
-            group.getOrFail(QQList.get(4)).mute(muted);
-            group.getOrFail(QQList.get(5)).mute(muted);
-            replayInfo.setReplayMessage("子弹炸膛了！博士！您还好吧？");
         }else {
-            replayInfo.setAT(replayInfo.getQq());
-            replayInfo.setReplayMessage("，永别了，安息吧......");
+            //计算子弹位置设立随机数
+            int bullet = 0;
+            for (int i=0;i<6;i++){
+                bullet=bullet+new Random().nextInt(2);
+            }
+            switch (bullet) {
+                case 0 -> replayInfo.setQq(QQList.get(0));
+                case 1 -> replayInfo.setQq(QQList.get(1));
+                case 2 -> replayInfo.setQq(QQList.get(2));
+                case 3 -> replayInfo.setQq(QQList.get(3));
+                case 4 -> replayInfo.setQq(QQList.get(4));
+                default -> replayInfo.setQq(QQList.get(5));
+            }
+            //把获取到的禁言QQ带入禁言功能并且实现禁言
+            replayInfo.setMuted(5 * 60);
+            if(new Random().nextInt(100)>98){
+                int muted = 60;
+                for(int i=0;i<6;i++){
+                    replayInfo.setQq(QQList.get(i));
+                    replayInfo.setMuted(muted);
+                    sendMessageUtil.sendGroupMsg(replayInfo);
+                }
+                replayInfo.setReplayMessage("子弹炸膛了！博士！您还好吧？");
+            }else {
+                replayInfo.setAT(replayInfo.getQq());
+                replayInfo.setReplayMessage("，永别了，安息吧......");
+            }
+            rouletteDuel.remove(messageInfo.getGroupId());
         }
-        rouletteDuel.remove(messageInfo.getGroupId());
         return replayInfo;
     }
 

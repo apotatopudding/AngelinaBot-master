@@ -269,7 +269,7 @@ public class PetPetService {
         textLine.nextLine();
         textLine.addString("#猜干员");
         textLine.addSpace(8);
-        textLine.addString("#抢答");
+        textLine.addString("#(干员名字)!");
         textLine.nextLine();
         textLine.addString("#重启猜干员");
         textLine.addSpace(6);
