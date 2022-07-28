@@ -26,7 +26,7 @@
 
 # 如何使用
 
-- [如何搭建一个自己的AngelinaBot]()
+- [如何搭建一个自己的AngelinaBot](https://www.bilibili.com/video/BV1g341137oB)
 
 - [如何使用AngelinaFrame编写一个自己的Bot](https://github.com/Strelizia02/AngelinaFrame/wiki)
 
