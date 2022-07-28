@@ -1,6 +1,8 @@
-# AngelinaBot
+# SaileachBot
 
 基于[AngelinaFrame](https://github.com/Strelizia02/AngelinaFrame)的明日方舟主题QQ群聊机器人
+
+改自[AngelinaBot](https://github.com/Strelizia02/AngelinaBot)
 
 # 警告！！
 
