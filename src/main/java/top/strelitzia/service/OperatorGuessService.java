@@ -71,6 +71,7 @@ public class OperatorGuessService {
             sendMessageUtil.sendGroupMsg(replayInfo);
             replayInfo.setReplayMessage(null);
             answerTopic(messageInfo,operatorList);
+            groupList.remove(messageInfo.getGroupId());
         }
         return replayInfo;
     }
@@ -113,7 +114,7 @@ public class OperatorGuessService {
                     replayInfo.setReplayMessage("博士你是不是困了，可能是整理文件太忙碌了吧，要不你先回去休息休息，下次有空再来参加我们的茶话会吧");
                     sendMessageUtil.sendGroupMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
-                    return;
+                    break;
                 }
             }else {
                 overtime = false;
@@ -229,10 +230,10 @@ public class OperatorGuessService {
                     tryNum = tryNum + 1;
                     // 判断tryNum是否达到十次，超过十次则公布答案并进行下一题
                     if (tryNum > 10) {
-                        topicNum = topicNum + 1;
-                        tryNum = 0;
                         replayInfo.setReplayMessage("都不对哦博士，你看他来了，是干员" + operatorList.get(topicNum) + "呢" +
                                 "\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
+                        topicNum = topicNum + 1;
+                        tryNum = 0;
                         replayInfo.getReplayImg().clear();
                     }
                 }
