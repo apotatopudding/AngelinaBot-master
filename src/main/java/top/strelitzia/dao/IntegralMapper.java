@@ -20,10 +20,10 @@ public interface IntegralMapper {
     //更新积分榜
     Integer integralByGroupId(@Param("groupId") Long groupId, @Param("name") String name, @Param("QQ") Long QQ, @Param("integral") Integer integral);
 
-    //清空清空所有数据
-    Integer cleanThisWeek();
+    //清空清空本月积分
+    Integer cleanThisMonth();
 
-    //扣除十点积分以开始绝地作战
+    //扣除三十点积分以开始绝地作战
     Integer minusTenPointsByGroupId(@Param("groupId") Long groupId,@Param("QQ") Long QQ);
 
     //根据QQ查询当日签到

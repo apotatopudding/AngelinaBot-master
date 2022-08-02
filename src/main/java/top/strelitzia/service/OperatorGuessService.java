@@ -89,7 +89,7 @@ public class OperatorGuessService {
                     if(message.getText()!=null){
                         text = message.getText();
                     }else {
-                        text = " ";
+                        text = "任何非感叹号结尾的语句皆可";
                     }
                     String end = text.substring(text.length()-1);
                     String sentence = text.substring(0,text.length()-1);
@@ -226,6 +226,7 @@ public class OperatorGuessService {
                         textLine.addString("职业：X");
                     }
                     replayInfo.setReplayImg(textLine.drawImage());
+                    replayInfo.setRecallTime(60);
                     replayInfo.setReplayMessage("不对不对，"+recall.getName()+"博士，再尝试一下吧");
                     tryNum = tryNum + 1;
                     // 判断tryNum是否达到十次，超过十次则公布答案并进行下一题
@@ -239,6 +240,7 @@ public class OperatorGuessService {
                 }
             }
             sendMessageUtil.sendGroupMsg(replayInfo);
+            replayInfo.setRecallTime(null);
             replayInfo.setReplayMessage(null);
             replayInfo.getReplayImg().clear();
         }

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.mamoe.mirai.Bot;
 import net.mamoe.mirai.contact.Group;
 import net.mamoe.mirai.contact.Member;
+import net.mamoe.mirai.contact.MemberPermission;
 import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -81,12 +82,63 @@ public class ArknightsBattleground {
             battleGroundGroup.remove(messageInfo.getGroupId());
             return replayInfo;
         }
-        if (integral < 10){
+        if (integral < 30){
             replayInfo.setReplayMessage("您的积分不足以开启活动，多多争取吧");
             battleGroundGroup.remove(messageInfo.getGroupId());
             return replayInfo;
         }
-        replayInfo.setReplayMessage("绝地作战即将开启，请各位踊跃参与吧");
+        //检查群临时会话是否开启
+        MemberPermission permission = messageInfo.getBotPermission();
+        if(permission.getLevel()>0){
+            replayInfo.setReplayMessage("由于"+messageInfo.getBotName()+"是管理员身份，无法判断群聊临时会话是否开启，请开启人自行检查并确认群临时会话开启" +
+                    "\n" +
+                    "\n如确认临时会话开启，请回复 ( 确认 ) 以开启绝地作战" +
+                    "\n请务必仔细检查，如果确认开启而无法发送临时会话消息，绝地作战将会立刻关闭，扣除的积分则不再退还");
+            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            AngelinaListener angelinaListener = new AngelinaListener() {
+                //本人回复为确认时生效
+                @Override
+                public boolean callback(MessageInfo message) {
+                    String participant;
+                    if(message.getText()==null){
+                        participant = "任何非报名语句皆可";
+                    }else {
+                        participant = message.getText();
+                    }
+                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
+                            message.getQq().equals(messageInfo.getQq()) &&
+                            participant.equals("确认");
+                }
+            };
+            //监听等待
+            angelinaListener.setGroupId(messageInfo.getGroupId());
+            angelinaListener.setSecond(30);
+            MessageInfo recall = AngelinaEventSource.waiter2(angelinaListener).getMessageInfo();
+            if (recall == null) {
+                battleGroundGroup.remove(messageInfo.getGroupId());
+                replayInfo.setReplayMessage("长时间未确认，绝地作战已关闭");
+                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                replayInfo.setReplayMessage("由于无法确认临时会话情况，绝地作战已关闭");
+                return replayInfo;
+            }else {
+                replayInfo.setReplayMessage("临时会话关系已确认，游戏即将开始");
+                sendMessageUtil.sendGroupMsg(replayInfo);
+            }
+        }else {
+            replayInfo.setReplayMessage("测试消息");
+            try {
+                sendMessageUtil.sendGroupTempMsg(replayInfo);
+            }catch (IllegalStateException e){
+                log.error(e.toString());
+                battleGroundGroup.remove(messageInfo.getGroupId());
+                replayInfo.setReplayMessage("群临时会话已关闭，无法开始游戏，请开启后再试");
+                return replayInfo;
+            }
+            replayInfo.setReplayMessage("临时会话关系已确认，游戏即将开始");
+            sendMessageUtil.sendGroupMsg(replayInfo);
+        }
+        //开始报名
+        replayInfo.setReplayMessage("绝地作战报名已开启，请各位踊跃参与吧");
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.setReplayMessage(null);
         List<BattleGroundInfo> participantList =new ArrayList<>(10);//参与者信息列表
@@ -97,7 +149,12 @@ public class ArknightsBattleground {
                 //只有返回为报名时才生效
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String participant = message.getText();
+                    String participant;
+                    if(message.getText()==null){
+                        participant = "任何非报名语句皆可";
+                    }else {
+                        participant = message.getText();
+                    }
                     return message.getGroupId().equals(messageInfo.getGroupId()) && participant.equals("报名");
                 }
             };
@@ -134,7 +191,7 @@ public class ArknightsBattleground {
         }
         //再次查询积分情况，如果积分被提前花费则会开启失败
         integral = this.integralMapper.selectByQQ(messageInfo.getQq());
-        if (integral < 10){
+        if (integral < 30){
             replayInfo.setReplayMessage("您的积分已经不足以开启绝地作战，可能是您提前花掉了积分，绝地作战开启失败");
             battleGroundGroup.remove(messageInfo.getGroupId());
             return replayInfo;
@@ -178,10 +235,8 @@ public class ArknightsBattleground {
         textLine.addString("重点提醒：不要加机器人为好友，可能会造成参与失败");
         replayInfo.setReplayImg(textLine.drawImage());
         new Thread(() -> {
-            //开启子线程启动延时
+            //开启子线程启动延时缩圈
             List<Integer> allList = new ArrayList<>(Arrays.asList(2,3,4,5,6,7));//地区表，维多利亚永远不抽
-            Bot bot = Bot.getInstance(messageInfo.getLoginQq());
-            Group group = bot.getGroupOrFail(messageInfo.getGroupId());
             try {
                 Thread.sleep(180000);
             }catch (Exception e){
@@ -192,7 +247,7 @@ public class ArknightsBattleground {
                     if ( battleGroundGroup.get(messageInfo.getGroupId()).isExit() ){
                         throw new InterruptedException();
                     }
-                    allList = selectArea(allList,group,messageInfo.getGroupId());
+                    allList = selectArea(allList,messageInfo);
                     try {
                         Thread.sleep(180000);
                     }catch (Exception e){
@@ -210,14 +265,13 @@ public class ArknightsBattleground {
     @AngelinaFriend(keyWords = {"前往"}, description = "绝地作战搜宝项目")
     public ReplayInfo leaveTo(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-
         //检查是否为好友
         if(!battleGroundGroup.containsKey(messageInfo.getGroupId())){
             replayInfo.setReplayMessage("群组查找失败，可能还没开始活动，请注意勿加琴柳为好友");
             return replayInfo;
         }
         //检查活动是否开启
-        if( ! battleGroundGroup.containsKey(messageInfo.getGroupId())){
+        if(!battleGroundGroup.containsKey(messageInfo.getGroupId())){
             replayInfo.setReplayMessage("要先开始绝地作战哦");
             return replayInfo;
         }
@@ -277,6 +331,15 @@ public class ArknightsBattleground {
                 }
             }else { replayInfo.setReplayMessage("您还没有告诉我您要前往的地点呢，重新告诉我一下吧" ); }
         }else{ replayInfo.setReplayMessage("快去观看精彩的对决吧"); }//活动在办但是没有开始临时会话
+        try {
+            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            replayInfo.setReplayMessage(null);
+        }catch (IllegalStateException e){
+            this.cleanGroupDate(messageInfo);
+            replayInfo.setReplayMessage("很抱歉，由于群组会话已经被关闭，琴柳无法发送消息，游戏被迫终止");
+            sendMessageUtil.sendGroupMsg(replayInfo);
+            replayInfo.setReplayMessage(null);
+        }
         return replayInfo;
     }
 
@@ -416,6 +479,11 @@ public class ArknightsBattleground {
     @AngelinaGroup(keyWords = {"出击"}, description = "战胜对手，赢得荣耀，欢呼吧！")
     public ReplayInfo fieldOfHonor(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        //检查活动是否开启
+        if( ! battleGroundGroup.containsKey(messageInfo.getGroupId())){
+            replayInfo.setReplayMessage("要先开始绝地作战哦");
+            return replayInfo;
+        }
 
         //群组信息
         BattleGroundGroupInfo battleGroundGroupInfo = battleGroundGroup.get(messageInfo.getGroupId());
@@ -428,11 +496,7 @@ public class ArknightsBattleground {
         String defeatedBy = battleGroundInfo.getDefeatedBy();
         Integer health = battleGroundInfo.getHealth();
 
-        //检查活动是否开启
-        if( ! battleGroundGroup.containsKey(messageInfo.getGroupId())){
-            replayInfo.setReplayMessage("要先开始绝地作战哦");
-            return replayInfo;
-        }
+
         //获取QQ判断是否在所属群
         List<Long> sure = battleGroundMapper.selectAllQQByGroup(messageInfo.getGroupId(),messageInfo.getQq());
         if ( sure.size() ==0 ){
@@ -496,16 +560,16 @@ public class ArknightsBattleground {
                                     "，背后被血浸润的刀光映衬着"+name+"的惨笑。"+name+"轻轻张口，用微弱的声音轻叹一句'何必如此？'夕阳西下，漫天的红霞倒映在两人渐冷的尸体上，绚烂无比";
                             //第一名
                             Integer integral = this.integralMapper.selectByQQ(QQ);
-                            try{integral = integral + 5;
+                            try{integral = integral + 15;
                             }catch (NullPointerException e){
-                                integral = 5;
+                                integral = 15;
                             }
                             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),name,QQ,integral);
                             //第二名
                             integral = this.integralMapper.selectByQQ(duel);
-                            try{integral = integral + 3;
+                            try{integral = integral + 10;
                             }catch (NullPointerException e){
-                                integral = 3;
+                                integral = 10;
                             }
                             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),duelName,duel,integral);
                         }else{
@@ -516,16 +580,16 @@ public class ArknightsBattleground {
                                     duelName+"挥刀猛刺已无法收回的时机，轻松一刀撂翻了"+duelName+"，一员悍将就此倒下，令人扼腕叹息啊";
                             //第一名
                             Integer integral = this.integralMapper.selectByQQ(QQ);
-                            try{integral = integral + 5;
+                            try{integral = integral + 15;
                             }catch (NullPointerException e){
-                                integral = 5;
+                                integral = 15;
                             }
                             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),name,QQ,integral);
                             //第二名
                             integral = this.integralMapper.selectByQQ(duel);
-                            try{integral = integral + 3;
+                            try{integral = integral + 10;
                             }catch (NullPointerException e){
-                                integral = 3;
+                                integral = 10;
                             }
                             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),duelName,duel,integral);
                         }
@@ -536,16 +600,16 @@ public class ArknightsBattleground {
                                 "竟然是"+duelName+"漏出的假破绽！"+name+"急于求成，已经将整个身侧暴露在了"+duelName+"的面前，"+duelName+"回身的同时，以一刀凌厉的挑刀击中了"+name+"的要害。深藏不露，高手啊！";
                         //第一名
                         Integer integral = this.integralMapper.selectByQQ(duel);
-                        try{integral = integral + 5;
+                        try{integral = integral + 15;
                         }catch (NullPointerException e){
-                            integral = 5;
+                            integral = 15;
                         }
                         this.integralMapper.integralByGroupId(messageInfo.getGroupId(),duelName,duel,integral);
                         //第二名
                         integral = this.integralMapper.selectByQQ(QQ);
-                        try{integral = integral + 3;
+                        try{integral = integral + 10;
                         }catch (NullPointerException e){
-                            integral = 3;
+                            integral = 10;
                         }
                         this.integralMapper.integralByGroupId(messageInfo.getGroupId(),name,QQ,integral);
                     }
@@ -568,13 +632,13 @@ public class ArknightsBattleground {
                             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),name,QQ,integral);
                         }else{
                             //三进二，输的为第三即后手为第三
-                            award = "赛场出现了异样场上二人联合，向"+duelName+"发起了猛烈的围攻！"+duelName+"从容接下了二人招数，但是很快啊，疲乏不堪的"+duelName+"有些不堪重负了，招架动作开始迟缓了。在堪堪躲过了一刀以后，"+
+                            award = "赛场出现了异样，场上二人联合，向"+duelName+"发起了猛烈的围攻！"+duelName+"从容接下了二人招数，但是很快啊，疲乏不堪的"+duelName+"有些不堪重负了，招架动作开始迟缓了。在堪堪躲过了一刀以后，"+
                                     duelName+"似乎试图逃出包围，他在后撤。 "+name+"猛地追了上去，踹翻了"+duelName+"，看来他想要顺势斩掉"+duelName+"了。"+name+"一刀劈下，"+duelName+"却灵活的一个翻滚躲开了刀锋。"+
                                     name+"是还想要乘胜追击吗？看来"+duelName+"察觉到了，他在干什么，他一个翻滚滚出了赛场！这就是认输了啊！很遗憾"+duelName+"被淘汰了，不过能在这种赛事下活下来也实属罕见，恭喜"+duelName+"活着获得第三名";
                             Integer integral = this.integralMapper.selectByQQ(duel);
-                            try{integral = integral + 1;
+                            try{integral = integral + 5;
                             }catch (NullPointerException e){
-                                integral = 1;
+                                integral = 5;
                             }
                             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),duelName,duel,integral);
                         }
@@ -584,9 +648,9 @@ public class ArknightsBattleground {
                                 name+"反应也不慢，刀一横又是一记猛挥，看来是棋逢对手了啊，不过"+duelName+"又以一个转身躲开了。"+name+"急了，看来他似乎没想到对手能有这么灵巧的身法，狂风骤雨般的大刀向着"+name+"攻了过去，" +
                                 "一下两下，接连躲过了七八刀？！"+name+"的攻击已经放慢了，什么时候，"+duelName+"竟然绕道了他的后面！一刀刺穿了"+name+"！快准狠啊，看来"+duelName+"还是棋高一着，恭喜"+name+"";
                         Integer integral = this.integralMapper.selectByQQ(QQ);
-                        try{integral = integral + 1;
+                        try{integral = integral + 5;
                         }catch (NullPointerException e){
-                            integral = 1;
+                            integral = 5;
                         }
                         this.integralMapper.integralByGroupId(messageInfo.getGroupId(),name,QQ,integral);
                     }
@@ -783,9 +847,10 @@ public class ArknightsBattleground {
     /**
      * 缩圈提醒与打击
      */
-    public List<Integer> selectArea(List<Integer> allList,Group group,Long groupId) {
+    public List<Integer> selectArea(List<Integer> allList,MessageInfo messageInfo) {
+        ReplayInfo replayInfo =new ReplayInfo(messageInfo);
         log.info("发送新一轮缩圈提醒");
-        BattleGroundGroupInfo battleGroundGroupInfo = battleGroundGroup.get(groupId);
+        BattleGroundGroupInfo battleGroundGroupInfo = battleGroundGroup.get(messageInfo.getGroupId());
         List<Integer> closeArea = battleGroundGroupInfo.getCloseArea();
         if( closeArea == null){
             closeArea = new ArrayList<>();
@@ -795,14 +860,13 @@ public class ArknightsBattleground {
             int Num = new Random().nextInt(allList.size());
             Integer area = allList.get(Num);
             allList.remove(Num);
-            List<Long> sameAreaList = battleGroundMapper.selectQQBySameArea(groupId,area);
+            List<Long> sameAreaList = battleGroundMapper.selectQQBySameArea(messageInfo.getGroupId(),area);
             //把删掉的地点编号加入已关闭区域
             closeArea.add(area);
             battleGroundGroupInfo.setCloseArea(closeArea);
-            battleGroundGroup.put(groupId,battleGroundGroupInfo);
+            battleGroundGroup.put(messageInfo.getGroupId(),battleGroundGroupInfo);
             //给所有在毒圈里的人发消息
             for (Long sameAreaQQ : sameAreaList) {
-                Member member = group.getOrFail(sameAreaQQ);
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.append("你的位置暴露了，治安管理队将在三十秒后对你发起攻击，赶快离开\n" +
                         "尚且安全的地点有：\n");
@@ -810,7 +874,10 @@ public class ArknightsBattleground {
                     String closeString = atlas.get(areaList);
                     stringBuilder.append(areaList).append("、").append(closeString).append("\n");
                 }
-                member.sendMessage(stringBuilder.toString());
+                replayInfo.setQq(sameAreaQQ);
+                replayInfo.setReplayMessage(stringBuilder.toString());
+                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                replayInfo.setReplayMessage(null);
             }
         }
         //延时三十秒,再次检索地区，在地区内的所有人生命值归零
@@ -820,19 +887,23 @@ public class ArknightsBattleground {
             log.error(e.getMessage());
         }
         for (Integer area : closeArea) {
-            List<Long> sameAreaList = battleGroundMapper.selectQQBySameArea(groupId,area);
+            List<Long> sameAreaList = battleGroundMapper.selectQQBySameArea(messageInfo.getGroupId(),area);
             for ( Long sameAreaQQ : sameAreaList ) {
-                BattleGroundInfo battleGroundInfo  = battleGroundMapper.selectInfoByGroupAndQQ(groupId,sameAreaQQ);
+                BattleGroundInfo battleGroundInfo  = battleGroundMapper.selectInfoByGroupAndQQ(messageInfo.getGroupId(),sameAreaQQ);
                 //跳过所有已死的人
                 if(battleGroundInfo.getHealth() == 0){
-                    break;
+                    continue;
                 }
                 battleGroundInfo.setHealth(0);
                 battleGroundInfo.setDefeatedBy("治安管理队");
                 battleGroundMapper.updateInfoByGroupAndQQ(battleGroundInfo);
-                Member member = group.getOrFail(sameAreaQQ);
-                member.sendMessage("你被治安管理队乱枪打死在大街上，你不曾注意治安管理队在狞笑，很可惜本次大赛你被淘汰了");
-                group.sendMessage( battleGroundInfo.getName() + "被治安管理队乱枪打死在大街上，死状极其惨烈，你有没有听见"+ battleGroundInfo.getName() +"的悲鸣！");
+                replayInfo.setQq(sameAreaQQ);
+                replayInfo.setReplayMessage("你被治安管理队乱枪打死在大街上，你不曾注意治安管理队在狞笑，很可惜本次大赛你被淘汰了");
+                sendMessageUtil.sendGroupTempMsg(replayInfo);
+
+                replayInfo.setReplayMessage( battleGroundInfo.getName() + "被治安管理队乱枪打死在大街上，死状极其惨烈，你有没有听见"+ battleGroundInfo.getName() +"的悲鸣！");
+                sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.setReplayMessage(null);
             }
         }
         return allList;
@@ -965,11 +1036,16 @@ public class ArknightsBattleground {
                 replayInfo.setReplayMessage("对方未能击穿你的物理护甲，你的物理护甲受到了"+duelPhysicsAttack+"点伤害");
             }else {
                 //防御<攻击，护甲归零，扣血查找减伤，还需要扣血则扣除生命值
-                harm = duelPhysicsAttack - physicsArmor - reduceDamage;
-                if(harm<0){ harm = 0; }
+                harm = duelPhysicsAttack - physicsArmor;
+                if(harm > reduceDamage){
+                    health = health - (harm-reduceDamage);
+                    reduceDamage = 0;
+                }else if(harm == reduceDamage){
+                    reduceDamage = 0;
+                }else if(harm != 0){
+                    reduceDamage = 0;
+                }
                 physicsArmor = 0;
-                health = health - harm;
-                reduceDamage = 0;
                 replayInfo.setReplayMessage("对方反击了你，你受到了"+harm+"点物理伤害");
             }
             sendMessageUtil.sendGroupTempMsg(replayInfo);
@@ -982,11 +1058,16 @@ public class ArknightsBattleground {
                 replayInfo.setReplayMessage("对方未能击穿你的法术护甲，你的法术护甲受到了"+duelMagicAttack+"点伤害");
             }else {
                 //防御<攻击，护甲归零，扣血查找减伤，还需要扣血则扣除生命值
-                harm = duelMagicAttack - magicArmor - reduceDamage;
-                if(harm<0){ harm = 0; }
+                harm = duelMagicAttack - magicArmor;
+                if(harm > reduceDamage){
+                    health = health - (harm-reduceDamage);
+                    reduceDamage = 0;
+                }else if(harm == reduceDamage){
+                    reduceDamage = 0;
+                }else if(harm != 0){
+                    reduceDamage = 0;
+                }
                 magicArmor = 0;
-                health = health - harm;
-                reduceDamage =0;
                 replayInfo.setReplayMessage("对方反击了你，你受到了"+harm+"点法术伤害");
             }
             sendMessageUtil.sendGroupTempMsg(replayInfo);

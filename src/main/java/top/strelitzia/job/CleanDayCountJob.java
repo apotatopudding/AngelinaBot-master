@@ -55,10 +55,18 @@ public class CleanDayCountJob {
     //每天零点执行的任务
     @Scheduled(cron = "${scheduled.dayJob}")
     @Async
-    public void DayJob() {
+    public void dayJob() {
         integralMapper.cleanSignCount();
         tarotMapper.cleanTarotCount();
         log.info("{}每日零点任务清空", new Date());
+    }
+
+    //每月一号零点执行的任务
+    @Scheduled(cron = "${scheduled.dayJob}")
+    @Async
+    public void monthJob() {
+        integralMapper.cleanThisMonth();
+        log.info("{}每月一号零点任务清空", new Date());
     }
 
     @Scheduled(cron = "${scheduled.exterminateJob}")
@@ -71,8 +79,8 @@ public class CleanDayCountJob {
         textLine.addCenterStringLine("道路千万条，剿灭第一条");
         textLine.addCenterStringLine("剿灭忘记打，博士两行泪");
         textLine.addString("洁哥主页：https://www.angelina-bot.top/");
-        replayInfo.setReplayImg(textLine.drawImage());
         for (Long groupId: MiraiFrameUtil.messageIdMap.keySet()) {
+            replayInfo.setReplayImg(textLine.drawImage());
             replayInfo.setGroupId(groupId);
             replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(groupId));
             sendMessageUtil.sendGroupMsg(replayInfo);

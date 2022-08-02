@@ -12,6 +12,10 @@ public class TarotInfo {
     private String tarotCard1;
     private String tarotCard2;
     private String tarotCard3;
+    private Integer tarotCard1Position;
+    private Integer tarotCard2Position;
+    private Integer tarotCard3Position;
+
 
     public long getQq() {
         return qq;
@@ -52,4 +56,16 @@ public class TarotInfo {
     public void setTarotCard3(String tarotCard3) {
         this.tarotCard3 = tarotCard3;
     }
+
+    public Integer getTarotCard1Position() { return tarotCard1Position; }
+
+    public void setTarotCard1Position(Integer tarotCard1Position) { this.tarotCard1Position = tarotCard1Position; }
+
+    public Integer getTarotCard2Position() { return tarotCard2Position; }
+
+    public void setTarotCard2Position(Integer tarotCard2Position) { this.tarotCard2Position = tarotCard2Position; }
+
+    public Integer getTarotCard3Position() { return tarotCard3Position; }
+
+    public void setTarotCard3Position(Integer tarotCard3Position) { this.tarotCard3Position = tarotCard3Position; }
 }

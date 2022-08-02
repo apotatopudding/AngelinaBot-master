@@ -49,8 +49,8 @@
         integral = #{integral,jdbcType=INTEGER}
     </update>
 
-    <!--  清空清空本周积分  -->
-    <update id="cleanThisWeek">
+    <!--  清空清空本月积分  -->
+    <update id="cleanThisMonth">
         UPDATE a_integral
         SET
         integral = 0

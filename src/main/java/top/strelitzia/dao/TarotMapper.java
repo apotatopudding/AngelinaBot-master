@@ -5,11 +5,11 @@ import top.strelitzia.model.TarotInfo;
 
 public interface TarotMapper {
 
-    //更新塔罗牌抽取数目到数据库中
+    //更新塔罗牌抽取次数到数据库中
     Integer updateTarotByQQ(@Param("qq") Long qq, @Param("name") String name, @Param("tarotCount") Integer tarotCount);
 
     //更新塔罗牌的卡牌信息到数据库中
-    Integer updateTarotCardByQQ(@Param("qq") Long qq, @Param("tarotCard1") String tarotCard1, @Param("tarotCard2") String tarotCard2,@Param("tarotCard3") String tarotCard3);
+    Integer updateTarotCardByQQ(TarotInfo tarotInfo);
 
     //根据QQ查询塔罗牌抽牌信息
     TarotInfo selectTarotByQQ(Long qq);

@@ -94,14 +94,16 @@ public class BiliListeningService {
                         List<Long> groups = userFoundMapper.selectCakeGroups(bili.getUid());
                         String pic = newDetail.getPicUrl();
                         ReplayInfo replayInfo = new ReplayInfo();
-                        replayInfo.setReplayMessage(result);
-                        if (pic != null) {
-                            replayInfo.setReplayImg(pic);
-                        }
                         for (Long groupId: groups) {
+                            replayInfo.setReplayMessage(result);
+                            if (pic != null) {
+                                replayInfo.setReplayImg(pic);
+                            }
                             replayInfo.setGroupId(groupId);
                             replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(groupId));
                             sendMessageUtil.sendGroupMsg(replayInfo);
+                            replayInfo.setReplayMessage(null);
+                            replayInfo.getReplayImg().clear();
                             Thread.sleep(new Random().nextInt(5) * 100);
                         }
                     }

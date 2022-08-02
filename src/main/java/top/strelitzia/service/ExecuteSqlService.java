@@ -73,10 +73,12 @@ public class ExecuteSqlService {
                 List<String> imgUrlList = messageInfo.getImgUrlList();
                 for (String url: imgUrlList) {
                     replayInfo.setReplayImg(url);
+                    replayInfo.setRecallTime(110);
                 }
                 replayInfo.setGroupId(groupId);
                 replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(groupId));
                 sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.setRecallTime(null);
                 replayInfo.getReplayImg().clear();
             }
             replayInfo.getReplayImg().clear();

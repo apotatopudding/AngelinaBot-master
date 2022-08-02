@@ -76,7 +76,9 @@ public class GuessOperator {
 
                 boolean result = false;
                 replayInfo.setReplayImg(getTitle(list.get(i), i, hintsList, 3).drawImage());
+                replayInfo.setRecallTime(60);
                 sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.setRecallTime(null);
                 replayInfo.getReplayImg().clear();
                 int j = 0;
                 //仅有五次回答机会，超过五次就寄了，下一题
@@ -110,8 +112,10 @@ public class GuessOperator {
                         //答对了，直接下一题
                         replayInfo.setReplayMessage(recall.getName() + " 回答正确，答案是 " + name + " ,下一题");
                         replayInfo.setReplayImg(new File(operatorInfoMapper.selectAvatarByName(name)));
+                        replayInfo.setRecallTime(60);
                         sendMessageUtil.sendGroupMsg(replayInfo);
                         //把消息内容清掉，后续复用
+                        replayInfo.setRecallTime(null);
                         replayInfo.setReplayMessage(null);
                         replayInfo.getReplayImg().clear();
                         hintsList.clear();
@@ -125,14 +129,18 @@ public class GuessOperator {
                         break;
                     } else if (name.equals("提示")) {
                         replayInfo.setReplayImg(getTitle(list.get(i), i, hintsList, 1).drawImage());
+                        replayInfo.setRecallTime(60);
                         sendMessageUtil.sendGroupMsg(replayInfo);
                         replayInfo.getReplayImg().clear();
+                        replayInfo.setRecallTime(null);
                         j++;
                     } else {
                         //答错了
                         replayInfo.setReplayMessage("回答错误");
                         replayInfo.setReplayImg(getTitle(list.get(i), i, hintsList, 1).drawImage());
+                        replayInfo.setRecallTime(60);
                         sendMessageUtil.sendGroupMsg(replayInfo);
+                        replayInfo.setRecallTime(null);
                         replayInfo.getReplayImg().clear();
                         replayInfo.setReplayMessage(null);
                         j++;
@@ -141,8 +149,10 @@ public class GuessOperator {
                 if (!result) {
                     replayInfo.setReplayMessage("5次还没回答正确，正确答案是：" + list.get(i) + " ,下一题");
                     replayInfo.setReplayImg(new File(operatorInfoMapper.selectAvatarByName(list.get(i))));
+                    replayInfo.setRecallTime(60);
                     sendMessageUtil.sendGroupMsg(replayInfo);
                     //把消息内容清掉，后续复用
+                    replayInfo.setRecallTime(null);
                     replayInfo.setReplayMessage(null);
                     replayInfo.getReplayImg().clear();
                     hintsList.clear();

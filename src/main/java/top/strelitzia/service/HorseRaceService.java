@@ -70,7 +70,12 @@ public class HorseRaceService {
             AngelinaListener angelinaListener =new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String join = message.getArgs().get(0);
+                    String join;
+                    if(message.getText()!=null){
+                        join = message.getArgs().get(0);
+                    }else {
+                        join = "任何非为下注的语句皆可";
+                    }
                     return message.getGroupId().equals(messageInfo.getGroupId())&&
                             join.equals("下注");
                 }

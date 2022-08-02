@@ -65,4 +65,5 @@
         DO update set
         setup_integral = #{integral}
     </update>
+
 </mapper>

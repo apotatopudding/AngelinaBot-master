@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.util.Random;
 
 @Slf4j
@@ -40,6 +41,7 @@ public class PetPetService {
             userImage = ImageIO.read(new URL("http://q.qlogo.cn/headimg_dl?dst_uin=" + messageInfo.getQq() + "&spec=100"));
             String path = "runFile/petpet/frame.gif";
             petPetUtil.getGif(path, userImage);
+            replayInfo.setRecallTime(60);
             replayInfo.setReplayImg(new File(path));
             return replayInfo;
         } catch (IOException e) {
@@ -53,6 +55,7 @@ public class PetPetService {
         String path = "runFile/petpet/saiLeach.gif";
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         replayInfo.setReplayImg(new File(path));
+        replayInfo.setRecallTime(30);
         replayInfo.setReplayMessage("这一次换我守在这里狞笑，您快带着大家分崩离析");
         return replayInfo;
     }
@@ -86,9 +89,8 @@ public class PetPetService {
             return replayInfo;
         }
         if(folder.isDirectory() && files.length != 0) {
-            int picNum = files.length;
-            int selectPicIndex = (int) (Math.random()*picNum);
-            File selectFile = files[selectPicIndex];
+            int selectAudioIndex = new SecureRandom().nextInt(files.length);
+            File selectFile = files[selectAudioIndex];
             String oriFileName = selectFile.getAbsolutePath();
             replayInfo.setReplayAudio(new File(oriFileName));
         }else {log.info("引用了一个空文件或空文件夹");}
@@ -107,6 +109,7 @@ public class PetPetService {
     public ReplayInfo GroupQuestion(MessageInfo messageInfo) {
         String path = "runFile/questionPicture/question.jpg";
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        replayInfo.setRecallTime(30);
         replayInfo.setReplayImg(new File(path));
         return replayInfo;
     }
@@ -190,6 +193,7 @@ public class PetPetService {
                 }
             }
         }
+        replayInfo.setRecallTime(60);
         return replayInfo;
     }
 
@@ -211,6 +215,7 @@ public class PetPetService {
             replayInfo.setReplayImg(new File(oriFileName));
         }
         else {log.info("引用了一个空文件或空文件夹");}
+        replayInfo.setRecallTime(60);
         return replayInfo;
     }
 

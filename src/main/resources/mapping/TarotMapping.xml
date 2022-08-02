@@ -4,9 +4,12 @@
     <resultMap id="BaseResultMap" type="top.strelitzia.model.TarotInfo">
         <result column="qq" property="qq" jdbcType="BIGINT"/>
         <result column="tarot_count" property="tarotCount" jdbcType="INTEGER"/>
-        <result column="tarot_card_1" property="tarotCard1" jdbcType="BIGINT"/>
-        <result column="tarot_card_2" property="tarotCard2" jdbcType="BIGINT"/>
-        <result column="tarot_card_3" property="tarotCard3" jdbcType="BIGINT"/>
+        <result column="tarot_card_1" property="tarotCard1" jdbcType="VARCHAR"/>
+        <result column="tarot_card_2" property="tarotCard2" jdbcType="VARCHAR"/>
+        <result column="tarot_card_3" property="tarotCard3" jdbcType="VARCHAR"/>
+        <result column="tarot_card_1_position" property="tarotCard1Position" jdbcType="INTEGER"/>
+        <result column="tarot_card_2_position" property="tarotCard2Position" jdbcType="INTEGER"/>
+        <result column="tarot_card_3_position" property="tarotCard3Position" jdbcType="INTEGER"/>
     </resultMap>
 
     <!--  根据qq查询抽牌信息  -->
@@ -32,34 +35,35 @@
     </update>
 
     <!--  写入抽取的塔罗牌名字  -->
-    <update id="updateTarotCardByQQ">
-        INSERT INTO a_user_tarot (
-        qq,
-        tarot_card_1,
-        tarot_card_2,
-        tarot_card_3
-        )
+    <update id="updateTarotCardByQQ" parameterType="top.strelitzia.model.TarotInfo">
+        INSERT INTO a_user_tarot (qq,tarot_card_1,tarot_card_2,tarot_card_3,tarot_card_1_position,tarot_card_2_position,tarot_card_3_position)
         VALUES
-        (#{qq},1 ,1, 1) ON CONFLICT(qq)
+        (#{qq},#{tarotCard1},#{tarotCard2},#{tarotCard3},#{tarotCard1Position},#{tarotCard2Position},#{tarotCard3Position})
+        ON CONFLICT(qq)
         DO update set
-        tarot_card_1 = #{tarotCard1}, tarot_card_2 = #{tarotCard2}, tarot_card_3 = #{tarotCard3}
+        tarot_card_1 = #{tarotCard1},
+        tarot_card_2 = #{tarotCard2},
+        tarot_card_3 = #{tarotCard3},
+        tarot_card_1_position = #{tarotCard1Position},
+        tarot_card_2_position = #{tarotCard2Position},
+        tarot_card_3_position = #{tarotCard3Position}
     </update>
 
     <!--  根据qq查询第一张牌信息  -->
     <select id="selectCard1ByQQ" resultMap="BaseResultMap">
-        select qq,tarot_card_1
+        select tarot_card_1,tarot_card_1_position
         from a_user_tarot WHERE qq = #{qq}
     </select>
 
     <!--  根据qq查询第二张牌信息  -->
     <select id="selectCard2ByQQ" resultMap="BaseResultMap">
-        select qq,tarot_card_2
+        select tarot_card_2,tarot_card_2_position
         from a_user_tarot WHERE qq = #{qq}
     </select>
 
     <!--  根据qq查询第三张牌信息  -->
     <select id="selectCard3ByQQ" resultMap="BaseResultMap">
-        select qq,tarot_card_3
+        select tarot_card_3,tarot_card_3_position
         from a_user_tarot WHERE qq = #{qq}
     </select>
 

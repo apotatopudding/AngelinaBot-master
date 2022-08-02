@@ -9,11 +9,12 @@ import top.angelinaBot.model.ReplayInfo;
 import top.strelitzia.dao.TarotMapper;
 import top.strelitzia.model.TarotInfo;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -26,35 +27,23 @@ public class TarotService {
     @AngelinaFriend(keyWords = {"请远山小姐为我占卜吧"}, description = "远山小姐的神奇占卜术，很灵的哦")
     public ReplayInfo FriendTakeTarot(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        TarotInfo tarotInfo =new TarotInfo();
         replayInfo.setReplayMessage("您今日已经占卜过了呢，您是想看看看今日的占卜结果吗");
-        if (this.takeTarotPass(messageInfo.getQq() ,messageInfo.getName())){
+        if (this.takeTarotPass(messageInfo.getQq(),messageInfo.getName())){
+            tarotInfo.setQq(messageInfo.getQq());
             String folderPath = "runFile/TarotPicture";
             File folder = new File(folderPath);
             File[] files = folder.listFiles();
-            if(folder.isDirectory()) {
-                int picNum = files.length;
-                //创建图片编号数组用于筛选
-                List<Integer> picList = new ArrayList<>();
-                int i,j,selectPicIndex;
-                for (i=1;i<=picNum;i++){
-                    picList.add(i);
-                }
+            if(folder.isDirectory() && files!=null) {
                 //筛选出需要的三个不重复图片文件编号
-                List<Integer> newList = createRandoms(picList);
-                String tarotCard1 = null,tarotCard2 = null,tarotCard3 = null;
-                //创建循环以取出值对应到文件编号
-                for(j=0;j<newList.size();j++){
-                    selectPicIndex = newList.get(j);
-                    File selectFile = files[selectPicIndex];
-                    //oriFileName = selectFile.getAbsolutePath();
-                    log.info("file:"+selectFile.getName());
-                    switch (j) {
-                        case 0 -> tarotCard1 = selectFile.getName();
-                        case 1 -> tarotCard2 = selectFile.getName();
-                        default -> tarotCard3 = selectFile.getName();
-                    }
-                }
-                this.tarotMapper.updateTarotCardByQQ(messageInfo.getQq(),tarotCard1,tarotCard2,tarotCard3);
+                List<String> newList = createRandoms(files);
+                tarotInfo.setTarotCard1Position(new SecureRandom().nextInt(2));
+                tarotInfo.setTarotCard1(newList.get(0));
+                tarotInfo.setTarotCard2Position(new SecureRandom().nextInt(2));
+                tarotInfo.setTarotCard2(newList.get(1));
+                tarotInfo.setTarotCard3Position(new SecureRandom().nextInt(2));
+                tarotInfo.setTarotCard3(newList.get(2));
+                this.tarotMapper.updateTarotCardByQQ(tarotInfo);
                 replayInfo.setReplayMessage("您的三张牌已经抽取完毕，请您翻开第一张预言牌吧");
             }else {
                 replayInfo.setReplayMessage("文件读取失败，请通知琴柳机器人的运行者");
@@ -69,8 +58,20 @@ public class TarotService {
         TarotInfo tarotInfo = this.tarotMapper.selectCard1ByQQ(messageInfo.getQq());
         String folderPath = "runFile/TarotPicture/";
         String filePath = folderPath + tarotInfo.getTarotCard1();
-        replayInfo.setReplayImg(new File(filePath));
-        replayInfo.setReplayMessage(this.takeTarotName(filePath));
+        try {
+            BufferedImage img = ImageIO.read(new File(filePath));
+            replayInfo.setReplayImg(img);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        int point = tarotInfo.getTarotCard1().lastIndexOf(".");
+        String s = tarotInfo.getTarotCard1().substring(0,point);
+        if (tarotInfo.getTarotCard1Position()==0){
+            s = ("当前塔罗牌为"+s+"，牌位为正位\n如果需要我为您解牌的话请说远山小姐解牌  XX（牌名）哦");
+        }else {
+            s = ("当前塔罗牌为"+s+"，牌位为反位\n如果需要我为您解牌的话请说远山小姐解牌  XX（牌名）哦");
+        }
+        replayInfo.setReplayMessage(s);
         return replayInfo;
     }
 
@@ -80,8 +81,20 @@ public class TarotService {
         TarotInfo tarotInfo = this.tarotMapper.selectCard2ByQQ(messageInfo.getQq());
         String folderPath = "runFile/TarotPicture/";
         String filePath = folderPath + tarotInfo.getTarotCard2();
-        replayInfo.setReplayImg(new File(filePath));
-        replayInfo.setReplayMessage(this.takeTarotName(filePath));
+        try {
+            BufferedImage img = ImageIO.read(new File(filePath));
+            replayInfo.setReplayImg(img);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        int point = tarotInfo.getTarotCard2().lastIndexOf(".");
+        String s = tarotInfo.getTarotCard2().substring(0,point);
+        if (tarotInfo.getTarotCard2Position()==0){
+            s = ("当前塔罗牌为"+s+"，牌位为正位\n如果需要我为您解牌的话请说远山小姐解牌  XX（牌名）哦");
+        }else {
+            s = ("当前塔罗牌为"+s+"，牌位为反位\n如果需要我为您解牌的话请说远山小姐解牌  XX（牌名）哦");
+        }
+        replayInfo.setReplayMessage(s);
         return replayInfo;
     }
 
@@ -91,26 +104,22 @@ public class TarotService {
         TarotInfo tarotInfo = this.tarotMapper.selectCard3ByQQ(messageInfo.getQq());
         String folderPath = "runFile/TarotPicture/";
         String filePath = folderPath + tarotInfo.getTarotCard3();
-        replayInfo.setReplayImg(new File(filePath));
-        replayInfo.setReplayMessage(this.takeTarotName(filePath));
+        try {
+            BufferedImage img = ImageIO.read(new File(filePath));
+            replayInfo.setReplayImg(img);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        int point = tarotInfo.getTarotCard3().lastIndexOf(".");
+        String s = tarotInfo.getTarotCard3().substring(0,point);
+        if (tarotInfo.getTarotCard3Position()==0){
+            s = ("当前塔罗牌为"+s+"，牌位为正位\n如果需要我为您解牌的话请说远山小姐解牌  XX（牌名）哦");
+        }else {
+            s = ("当前塔罗牌为"+s+"，牌位为反位\n如果需要我为您解牌的话请说远山小姐解牌  XX（牌名）哦");
+        }
+        replayInfo.setReplayMessage(s);
         return replayInfo;
     }
-
-    public String takeTarotName(String filePath) {
-        double r = Math.random();
-        int point = filePath.lastIndexOf(".");
-        int point1 = filePath.lastIndexOf("T");
-        String s = filePath.substring(point1+1,point);
-        if (r <= 0.5D) {
-            s = ("当前塔罗牌为"+s+"，牌位为正位\n如果需要我为您解牌的话请说远山小姐解牌 XX（牌名）哦");
-        }else {
-            s = ("当前塔罗牌为"+s+"，牌位为反位\n如果需要我为您解牌的话请说远山小姐解牌 XX（牌名）哦");
-        }
-        return s;
-    }
-
-
-
 
     public boolean takeTarotPass(Long qq ,String name){
         //判断是否到达每天一次条件
@@ -130,25 +139,17 @@ public class TarotService {
         return pass;
     }
 
-
-    private List<Integer> createRandoms(List<Integer> list) {
-        Map<Integer,String> map = new HashMap<>();
-        List<Integer> news = new ArrayList<>();
-        if (list.size() <= 3) {
-            return list;
-        } else {
-            while (map.size() < 3) {
-                int random = (int)(Math.random() * list.size());
-                if (!map.containsKey(random)) {
-                    map.put(random, "");
-                    news.add(list.get(random));
-                }
-            }
-            return news;
+    private List<String> createRandoms(File[] files) {
+        List<String> list =new ArrayList<>();
+        for(File file : files){ list.add(file.getName()); }
+        List<String> news = new ArrayList<>();
+        for(int i=0;i<3;i++){
+            String s = list.get(new Random().nextInt(list.size()));
+            news.add(s);
+            list.remove(s);
         }
+        return news;
     }
-
-
 }
 
 

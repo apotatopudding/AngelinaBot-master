@@ -71,6 +71,7 @@ public class OperatorGuessExerciseService {
         textLine.addString("职业：" + className);
         textLine.nextLine();
         replayInfo.setReplayImg(textLine.drawImage());
+        replayInfo.setRecallTime(60);
         return replayInfo;
     }
 
