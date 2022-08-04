@@ -160,11 +160,11 @@ public class OperatorGuessService {
                 // 当结果为ture，topicNum+1并返回setTopic
                 if(answer) {
                     Integer integral = this.integralMapper.selectByQQ(recall.getQq());
-                    //猜谜答对一次的人加五分
-                    try{integral = integral + 5;
+                    //猜谜答对一次的人加三分
+                    try{integral = integral + 3;
                     }catch (NullPointerException e){
                         //log.info(e.toString());
-                        integral = 5;
+                        integral = 3;
                     }
                     this.integralMapper.integralByGroupId(recall.getGroupId(), recall.getName(), recall.getQq(), integral);
                     //更新题号和猜测次数
@@ -254,11 +254,7 @@ public class OperatorGuessService {
             replayInfo.setReplayMessage("（琴柳似乎沉浸在和桑葚的聊天中，并没有注意到你）");
         }else {
             groupList.remove(messageInfo.getGroupId());
-            for (AngelinaListener listener: AngelinaEventSource.getInstance().listenerSet.keySet()) {
-                if (listener.getGroupId().equals(messageInfo.getGroupId())) {
-                    AngelinaEventSource.getInstance().listenerSet.remove(listener);
-                }
-            }
+            AngelinaEventSource.getInstance().listenerSet.keySet().removeIf(angelinaListener -> angelinaListener.getGroupId().equals(messageInfo.getGroupId()));
             replayInfo.setReplayMessage("博士您要走了吗，那请帮忙把这包甜司康饼带给小刻吧，下次有空记得还来玩啊");
         }
         return replayInfo;

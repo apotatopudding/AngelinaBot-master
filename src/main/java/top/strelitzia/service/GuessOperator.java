@@ -174,11 +174,7 @@ public class GuessOperator {
     @AngelinaGroup(keyWords = {"重启猜干员"})
     public ReplayInfo reGuessOperator(MessageInfo messageInfo) {
         groupList.remove(messageInfo.getGroupId());
-        for (AngelinaListener listener: AngelinaEventSource.getInstance().listenerSet.keySet()) {
-            if (listener.getGroupId().equals(messageInfo.getGroupId())) {
-                AngelinaEventSource.getInstance().listenerSet.remove(listener);
-            }
-        }
+        AngelinaEventSource.getInstance().listenerSet.keySet().removeIf(l -> l.getGroupId().equals(messageInfo.getGroupId()));
         return guessOperator(messageInfo);
     }
 

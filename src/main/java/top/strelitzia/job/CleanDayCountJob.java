@@ -62,7 +62,7 @@ public class CleanDayCountJob {
     }
 
     //每月一号零点执行的任务
-    @Scheduled(cron = "${scheduled.dayJob}")
+    @Scheduled(cron = "${scheduled.monthJob}")
     @Async
     public void monthJob() {
         integralMapper.cleanThisMonth();
