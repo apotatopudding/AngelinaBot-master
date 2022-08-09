@@ -1,6 +1,7 @@
 package top.strelitzia.model;
 
 public class HorseRaceInfo {
+    //QQ
     private Long QQ;
     //选手
     private Integer contestant;

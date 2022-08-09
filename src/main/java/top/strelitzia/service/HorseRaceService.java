@@ -25,7 +25,7 @@ public class HorseRaceService {
     @Autowired
     IntegralMapper integralMapper;
 
-    private static final Set<Long> groupList = new HashSet<>();//群组下注积分信息表
+    private static final Set<Long> groupList = new HashSet<>();//群组信息表
 
     //群组赛马选手信息
     private static final Map<Integer,String> contestantMap = new HashMap<>(){
@@ -66,6 +66,7 @@ public class HorseRaceService {
         int i = 1;
         List<Long> QQList =new ArrayList<>();//用于鉴定QQ是否重复
         List<HorseRaceInfo> participantList =new ArrayList<>();//列表以容纳加入的人的信息
+        int allIntegral = 0;
         while (i<=10){
             AngelinaListener angelinaListener =new AngelinaListener() {
                 @Override
@@ -206,6 +207,7 @@ public class HorseRaceService {
             QQList.add(recall.getQq());//QQ记录表写入
             horseRaceInfo.setQQ(recall.getQq());//写入下注人QQ
             participantList.add(horseRaceInfo);
+            allIntegral = allIntegral + horseRaceInfo.getIntegral();
             i++;
         }
         if(i==11) replayInfo.setReplayMessage("参加人数已满十人\n比赛开始");
@@ -217,7 +219,7 @@ public class HorseRaceService {
         for(HorseRaceInfo horseRaceInfo : participantList){
             Integer integral = this.integralMapper.selectByQQ(horseRaceInfo.getQQ());
             integral = integral - horseRaceInfo.getIntegral();
-            if(horseRaceInfo.getContestant().equals(selectNum)) integral = integral + horseRaceInfo.getIntegral() * 3;
+            if(horseRaceInfo.getContestant().equals(selectNum)) integral = integral + allIntegral;//获取所有人的投注
             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),"",horseRaceInfo.getQQ(),integral);
         }
         return replayInfo;

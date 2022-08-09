@@ -111,6 +111,7 @@ public class AgentService {
 
             BufferedImage image = drawPicByFound(s);
             if (image != null) {
+                replayInfo.setRecallTime(60);
                 replayInfo.setReplayImg(image);
             } else {
                 replayInfo.setReplayMessage(s);

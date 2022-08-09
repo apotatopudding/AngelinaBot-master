@@ -4,7 +4,7 @@ public class IntegralInfo {
     private long groupId;
     private Integer integral;
     private String name;
-    private Integer QQ;
+    private Long QQ;
     private Integer signCount;
 
     public long getGroupId() {
@@ -31,9 +31,9 @@ public class IntegralInfo {
         this.name = name;
     }
 
-    public Integer getQQ() { return QQ; }
+    public Long getQQ() { return QQ; }
 
-    public void setQQ(Integer QQ) { this.QQ = QQ; }
+    public void setQQ(Long QQ) { this.QQ = QQ; }
 
     public Integer getSignCount() { return signCount; }
 

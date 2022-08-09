@@ -49,20 +49,29 @@
         integral = #{integral,jdbcType=INTEGER}
     </update>
 
+    <!-- 增加指定数量积分  -->
+    <update id="increaseIntegralByGroupId">
+        INSERT INTO a_integral (group_id, QQ, integral)
+        VALUES
+        (#{groupId}, #{QQ}, #{num}) ON CONFLICT(QQ)
+        DO update set
+        integral = integral + #{num}
+    </update>
+
+    <!-- 扣除指定数量积分  -->
+    <update id="reduceIntegralByGroupId">
+        INSERT INTO a_integral (group_id, QQ, integral)
+        VALUES
+        (#{groupId}, #{QQ}, 0-#{num}) ON CONFLICT(QQ)
+        DO update set
+        integral = integral - #{num}
+    </update>
+
     <!--  清空清空本月积分  -->
     <update id="cleanThisMonth">
         UPDATE a_integral
         SET
         integral = 0
-    </update>
-
-    <!-- 扣除开启活动的积分（30点）  -->
-    <update id="minusTenPointsByGroupId">
-        INSERT INTO a_integral (group_id, QQ)
-        VALUES
-        (#{groupId}, #{QQ}) ON CONFLICT(QQ)
-        DO update set
-        integral = integral - 30
     </update>
 
     <!--  插入新qq，若已存在，则更新今日签到次数  -->

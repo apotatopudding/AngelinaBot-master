@@ -82,7 +82,7 @@ public class ArknightsBattleground {
             battleGroundGroup.remove(messageInfo.getGroupId());
             return replayInfo;
         }
-        if (integral < 30){
+        if (integral < 20){
             replayInfo.setReplayMessage("您的积分不足以开启活动，多多争取吧");
             battleGroundGroup.remove(messageInfo.getGroupId());
             return replayInfo;
@@ -191,7 +191,7 @@ public class ArknightsBattleground {
         }
         //再次查询积分情况，如果积分被提前花费则会开启失败
         integral = this.integralMapper.selectByQQ(messageInfo.getQq());
-        if (integral < 30){
+        if (integral < 20){
             replayInfo.setReplayMessage("您的积分已经不足以开启绝地作战，可能是您提前花掉了积分，绝地作战开启失败");
             battleGroundGroup.remove(messageInfo.getGroupId());
             return replayInfo;
@@ -201,10 +201,10 @@ public class ArknightsBattleground {
             this.battleGroundMapper.insertInfo(battleGroundInfo1);
         }
         //this.enableMapper.closeGroup(messageInfo.getGroupId(), 1);//停止群组消息接收（未启用）
-        //报名完成，扣除发起人的十点积分,同时开启活动开启临时会话，写入bean
+        //报名完成，扣除发起人的二十点积分,同时开启活动开启临时会话，写入bean
         battleGroundGroupInfo.setGroupTempSwitch(true);
         battleGroundGroup.put(messageInfo.getGroupId(),battleGroundGroupInfo);
-        this.integralMapper.minusTenPointsByGroupId(messageInfo.getGroupId(),messageInfo.getQq());
+        this.integralMapper.reduceIntegralByGroupId(messageInfo.getGroupId(),messageInfo.getQq(),20);
         TextLine textLine = new TextLine(100);
         textLine.addString("绝地作战正式开始");
         textLine.nextLine();

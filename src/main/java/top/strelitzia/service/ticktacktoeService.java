@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.*;
 
 @Service
-public class ticktacktoeService {
+public class TicktacktoeService {
 
     @Autowired
     private SendMessageUtil sendMessageUtil;

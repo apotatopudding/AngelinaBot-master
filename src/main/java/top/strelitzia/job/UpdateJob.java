@@ -19,7 +19,6 @@ public class UpdateJob {
     @Autowired
     private UpdateDataService updateDataService;
 
-
     //每天凌晨四点执行更新程序检查版本
     @Scheduled(cron = "${scheduled.updateJob}")
     @Async
