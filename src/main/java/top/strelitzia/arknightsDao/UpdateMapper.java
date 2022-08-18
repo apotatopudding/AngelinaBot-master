@@ -1,6 +1,7 @@
 package top.strelitzia.arknightsDao;
 
 
+import io.swagger.models.auth.In;
 import org.apache.ibatis.annotations.Param;
 import top.strelitzia.model.*;
 
@@ -65,17 +66,13 @@ public interface UpdateMapper {
 
     String getVersion();
 
-    Integer getVersionStatus();
-
-    Integer doingUpdateVersion();
-
-    Integer doingDownloadVersion();
-
-    Integer doneUpdateVersion();
-
     Integer updateVersion(String newVersion);
 
+    Integer insertVersion();
+
     Integer updateOperatorInfo(OperatorBasicInfo operatorInfo);
+
+    Integer updateCVNameByOperatorId(OperatorBasicInfo operatorBasicInfo);
 
     Integer updateSkillDecs(SkillDesc skillDesc);
 }

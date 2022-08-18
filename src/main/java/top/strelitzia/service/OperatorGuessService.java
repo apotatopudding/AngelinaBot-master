@@ -85,19 +85,19 @@ public class OperatorGuessService {
             AngelinaListener angelinaListener = new AngelinaListener(){
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String text;
-                    if(message.getText()!=null){
-                        text = message.getText();
-                    }else {
-                        text = "任何非感叹号结尾的语句皆可";
+                    boolean reply;
+                    try{String text = message.getText();
+                        String end = text.substring(text.length()-1);
+                        String sentence = text.substring(0,text.length()-1);
+                        String realName = nickNameMapper.selectNameByNickName(sentence);
+                        if (realName != null && !realName.equals("")) sentence = realName;
+                        reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                (end.equals("！") || end.equals("!")) && allOperator.contains(sentence);
                     }
-                    String end = text.substring(text.length()-1);
-                    String sentence = text.substring(0,text.length()-1);
-                    String realName = nickNameMapper.selectNameByNickName(sentence);
-                    if (realName != null && !realName.equals(""))
-                        sentence = realName;
-                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                            (end.equals("！")||end.equals("!"))&&allOperator.contains(sentence);
+                    catch (NullPointerException | StringIndexOutOfBoundsException e){
+                        reply = false;
+                    }
+                    return reply;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());
@@ -157,6 +157,7 @@ public class OperatorGuessService {
                         profession =true;
                     }
                 }
+                StringBuilder s = new StringBuilder();
                 // 当结果为ture，topicNum+1并返回setTopic
                 if(answer) {
                     Integer integral = this.integralMapper.selectByQQ(recall.getQq());
@@ -168,17 +169,9 @@ public class OperatorGuessService {
                     }
                     this.integralMapper.integralByGroupId(recall.getGroupId(), recall.getName(), recall.getQq(), integral);
                     //更新题号和猜测次数
-                    if(topicNum == (operatorList.size()-1)){
-                        replayInfo.setReplayMessage("真棒"+recall.getName()+"博士，恭喜您回答正确，正是干员"+operatorList.get(topicNum)+"呢，看，他已经加入茶会中了" +
-                                "\n嘉宾已经全部到齐，美妙的茶话会开始了");
-                        topicNum = topicNum + 1;
-                    }else {
-                        log.info(operatorList.get(topicNum+1));
-                        replayInfo.setReplayMessage("真棒"+recall.getName()+"博士，恭喜您回答正确，正是干员"+operatorList.get(topicNum)+"呢，看，他已经加入茶会中了" +
-                                "\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
-                        topicNum = topicNum + 1;
-                        tryNum = 0;
-                    }
+                    s.append("真棒").append(recall.getName()).append("博士，恭喜您回答正确，正是干员").append(operatorList.get(topicNum)).append("呢，看，他已经加入茶会中了");
+                    topicNum = topicNum + 1;
+                    tryNum = 0;
                 }else {
                     //当结果为false，tryNum+1并返回answerTopic继续抢答
                     TextLine textLine = new TextLine(20);
@@ -225,24 +218,33 @@ public class OperatorGuessService {
                     } else {
                         textLine.addString("职业：X");
                     }
-                    replayInfo.setReplayImg(textLine.drawImage());
-                    replayInfo.setRecallTime(60);
-                    replayInfo.setReplayMessage("不对不对，"+recall.getName()+"博士，再尝试一下吧");
-                    tryNum = tryNum + 1;
-                    // 判断tryNum是否达到十次，超过十次则公布答案并进行下一题
                     if (tryNum > 10) {
-                        replayInfo.setReplayMessage("都不对哦博士，你看他来了，是干员" + operatorList.get(topicNum) + "呢" +
-                                "\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
+                        // 判断tryNum是否达到十次，超过十次则公布答案并进行下一题
+                        s.append("都不对哦博士，你看他来了，是干员").append(operatorList.get(topicNum)).append("呢");
                         topicNum = topicNum + 1;
                         tryNum = 0;
+                    }else {
+                        replayInfo.setReplayImg(textLine.drawImage());
+                        replayInfo.setRecallTime(60);
+                        replayInfo.setReplayMessage("不对不对，" + recall.getName() + "博士，再尝试一下吧");
+                        tryNum = tryNum + 1;
+                        sendMessageUtil.sendGroupMsg(replayInfo);
+                        replayInfo.setRecallTime(null);
+                        replayInfo.setReplayMessage(null);
                         replayInfo.getReplayImg().clear();
+                        continue;
                     }
                 }
+                if(topicNum == (operatorList.size())){
+                    s.append("\n嘉宾已经全部到齐，美妙的茶话会开始了");
+                }else {
+                    s.append("\n让我们续上茶水，继续猜测下一位嘉宾是谁吧");
+                    log.info(operatorList.get(topicNum));
+                }
+                replayInfo.setReplayMessage(s.toString());
             }
             sendMessageUtil.sendGroupMsg(replayInfo);
-            replayInfo.setRecallTime(null);
             replayInfo.setReplayMessage(null);
-            replayInfo.getReplayImg().clear();
         }
     }
 
@@ -250,7 +252,7 @@ public class OperatorGuessService {
     public ReplayInfo closeTopic(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
-        if (messageInfo.getUserAdmin() == MemberPermission.MEMBER && !sqlAdmin){
+        if (messageInfo.getUserAdmin().getLevel()<1 && !sqlAdmin){
             replayInfo.setReplayMessage("（琴柳似乎沉浸在和桑葚的聊天中，并没有注意到你）");
         }else {
             groupList.remove(messageInfo.getGroupId());

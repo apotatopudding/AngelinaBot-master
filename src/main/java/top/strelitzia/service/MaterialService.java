@@ -2,6 +2,7 @@ package top.strelitzia.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
@@ -22,6 +23,7 @@ import java.util.Map;
  * @author strelitzia
  * @Date 2022/05/03 14:38
  **/
+
 @Service
 @Slf4j
 public class MaterialService {
@@ -89,10 +91,9 @@ public class MaterialService {
                 }
                 textLine.addString("干员" + operatorName.getOperatorName() + "的技能专精材料为：");
                 textLine.nextLine();
-                for (Integer id : skillIds) {
-                    List<MaterialInfo> materialInfos = skillMateryMapper.selectSkillUpByIdAndLevel(id, level);
-                    String pathname = skillMateryMapper.selectSkillPngByName(id);
-
+                for (Integer skillId : skillIds) {
+                    List<MaterialInfo> materialInfos = skillMateryMapper.selectSkillUpByIdAndLevel(skillId, level);
+                    String pathname = skillMateryMapper.selectSkillPngByName(skillId);
                     if (pathname != null) {
                         File skillPng = new File(pathname);
                         if (skillPng.exists()) {
@@ -103,7 +104,7 @@ public class MaterialService {
                     }else {
                         textLine.addSpace(3);
                     }
-                    textLine.addString(skillMateryMapper.selectSkillNameById(id) + " 专精" + level + "：");
+                    textLine.addString(skillMateryMapper.selectSkillNameById(skillId) + " 专精" + level + "：");
                     textLine.nextLine();
                     for (MaterialInfo m : materialInfos) {
                         textLine.addSpace(2);

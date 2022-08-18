@@ -23,7 +23,7 @@ public class RouletteService {
     //轮盘赌对决map
     private static final Map<Long,List<Long>> rouletteDuel = new HashMap<>();
 
-    @AngelinaGroup(keyWords = {"给轮盘上子弹","上膛","拔枪吧"}, description = "守护铳轮盘赌，看看谁是天命之子(多颗子弹直接在后面输入数字）")
+    @AngelinaGroup(keyWords = {"上子弹","上膛"}, description = "守护铳轮盘赌，看看谁是天命之子(多颗子弹直接在后面输入数字）")
     public ReplayInfo Roulette(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         int bulletNum ;
@@ -137,9 +137,14 @@ public class RouletteService {
             AngelinaListener angelinaListener = new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String mess = message.getText();
-                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                            mess.equals("加入");
+                    boolean reply;
+                    try {
+                        reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                message.getText().equals("加入");
+                    }catch (NullPointerException e){
+                        reply = false;
+                    }
+                    return reply;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());
@@ -153,10 +158,10 @@ public class RouletteService {
                 replayInfo.setReplayMessage("您已经参加了轮盘对决，不要重复参加哦");
                 break;
             }else {
-                replayInfo.setReplayMessage("欢迎第"+ i +"位挑战者" + messageInfo.getName() + "\n愿主保佑你，我的勇士。");
+                replayInfo.setReplayMessage("欢迎第"+ i +"位挑战者" + recall.getName() + "\n愿主保佑你，我的勇士。");
                 sendMessageUtil.sendGroupMsg(replayInfo);
                 replayInfo.setReplayMessage(null);
-                QQList.add(messageInfo.getQq());
+                QQList.add(recall.getQq());
                 i++;
             }
         }

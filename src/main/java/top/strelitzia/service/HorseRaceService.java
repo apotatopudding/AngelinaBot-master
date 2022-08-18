@@ -13,6 +13,7 @@ import top.angelinaBot.util.SendMessageUtil;
 import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.model.HorseRaceInfo;
 
+import java.security.SecureRandom;
 import java.util.*;
 
 @Slf4j
@@ -49,17 +50,38 @@ public class HorseRaceService {
             return replayInfo;
         }
         replayInfo.setReplayMessage("各位，精彩的赛马大赛就要开始了，有请各位选手登场！");
+        //绘制当场比赛状态概率表
+        Random random = new Random(System.nanoTime() + System.currentTimeMillis() / messageInfo.getQq());//随机数种子采用纳秒数+毫秒/随机数
+        final Map<Integer,Float> contestantStatus = new HashMap<>(){
+            {
+                put(1,random.nextFloat());
+                put(2,random.nextFloat());
+                put(3,random.nextFloat());
+                put(4,random.nextFloat());
+                put(5,random.nextFloat());
+                put(6,random.nextFloat());
+                put(7,random.nextFloat());
+                put(8,random.nextFloat());
+            }
+        };
         //绘制选手名单图片
         TextLine textLine = new TextLine(100);
         textLine.addString("比赛选手名单：");
         for(int i=1;i<=contestantMap.size();i++){
+            String s;
+            if(contestantStatus.get(i)<0.2) s = "状态不佳";
+            else if(contestantStatus.get(i)<0.4) s = "状态还行";
+            else if(contestantStatus.get(i)<0.6) s = "状态一般";
+            else if(contestantStatus.get(i)<0.8) s = "状态不错";
+            else s = "状态爆表";
             textLine.nextLine();
-            textLine.addString(i+ "、" + contestantMap.get(i));
+            textLine.addString(i+ "、" + contestantMap.get(i)+"（本场状态："+s+"）");
         }
         replayInfo.setReplayImg(textLine.drawImage());
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.getReplayImg().clear();
-        replayInfo.setReplayMessage("各位可以选择您喜欢的选手，发送下注 XX（选手名字或编号） XX（积分）为您喜欢的选手加油助威哦");
+        replayInfo.setReplayMessage("各位可以选择您喜欢的选手，发送下注 XX（选手名字或编号） XX（积分）为您喜欢的选手加油助威哦" +
+                "\n动态赔率规则：根据选手状态，赔率栏分为，状态爆表0.5倍（向上收整），状态不错1倍，状态一般2倍，状态还行4倍，状态不佳8倍");
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.setReplayMessage(null);
         //报名
@@ -71,14 +93,14 @@ public class HorseRaceService {
             AngelinaListener angelinaListener =new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String join;
-                    if(message.getText()!=null){
-                        join = message.getArgs().get(0);
-                    }else {
-                        join = "任何非为下注的语句皆可";
+                    boolean replay;
+                    try {
+                        replay = message.getGroupId().equals(messageInfo.getGroupId())&&
+                                message.getArgs().get(0).equals("下注");
+                    }catch (NullPointerException e){
+                        replay = false;
                     }
-                    return message.getGroupId().equals(messageInfo.getGroupId())&&
-                            join.equals("下注");
+                    return replay;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());
@@ -146,7 +168,6 @@ public class HorseRaceService {
                 replayInfo.setReplayMessage(null);
                 continue;
             }
-
             //判断积分填入是否为空，为空跳过循环
             if(recall.getArgs().size()>2){
                 //数字转换
@@ -181,7 +202,7 @@ public class HorseRaceService {
                 try{
                     realIntegral= this.integralMapper.selectByQQ(recall.getQq());
                 }catch (NullPointerException e){
-                    e.printStackTrace();
+                    log.info(e.toString());
                     replayInfo.setReplayMessage("您还没有积分呢，试着参与活动以获取积分吧");
                     sendMessageUtil.sendGroupMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
@@ -215,12 +236,18 @@ public class HorseRaceService {
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.setReplayMessage(null);
         //开始计算并获取随机计算的结果，然后计算积分
-        Integer selectNum = horseRace(messageInfo);
+        int selectNum = horseRace(messageInfo,contestantStatus);
         for(HorseRaceInfo horseRaceInfo : participantList){
-            Integer integral = this.integralMapper.selectByQQ(horseRaceInfo.getQQ());
-            integral = integral - horseRaceInfo.getIntegral();
-            if(horseRaceInfo.getContestant().equals(selectNum)) integral = integral + allIntegral;//获取所有人的投注
-            this.integralMapper.integralByGroupId(messageInfo.getGroupId(),"",horseRaceInfo.getQQ(),integral);
+            int integral = this.integralMapper.selectByQQ(horseRaceInfo.getQQ());
+            int settlement = integral - horseRaceInfo.getIntegral();
+            if(horseRaceInfo.getContestant().equals(selectNum)) {
+                if (contestantStatus.get(selectNum) < 0.2) settlement = integral + horseRaceInfo.getIntegral() * 8;
+                else if (contestantStatus.get(selectNum) < 0.4) settlement = integral + horseRaceInfo.getIntegral() * 4;
+                else if (contestantStatus.get(selectNum) < 0.6) settlement = integral + horseRaceInfo.getIntegral() * 2;
+                else if (contestantStatus.get(selectNum) < 0.8) settlement = integral + horseRaceInfo.getIntegral();
+                else settlement = (int) Math.ceil(integral + horseRaceInfo.getIntegral() * 0.5);
+            }
+            this.integralMapper.integralByGroupId(messageInfo.getGroupId(),"",horseRaceInfo.getQQ(),settlement);
         }
         return replayInfo;
     }
@@ -231,7 +258,7 @@ public class HorseRaceService {
      * 所以如果有选手到7时，必须控制下一刻最大只能到8，然后在最大为8时跳出循环进行选择
      * @param messageInfo 传递消息来源以发送
     **/
-    private Integer horseRace(MessageInfo messageInfo){
+    private int horseRace(MessageInfo messageInfo,Map<Integer,Float> contestantStatus){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         Map<Integer,List<Integer>> stepMap = new HashMap<>();//选手编号与单次步数表
         Map<Integer,Integer> distanceMap = new HashMap<>();//选手编号与总距离表
@@ -249,10 +276,9 @@ public class HorseRaceService {
                 //获取步数，将单步与前进总距离写入集合
                 int distance = distanceMap.get(i);
                 List<Integer> stepList = stepMap.get(i);
-                int step;//随机步数
+                int step = randomStep(contestantStatus.get(i));//用状态表去获取随机步数
                 //当修正开关开启时对所有距离到7修正，使最大只能到8而脱离循环
-                if (correction && distance == 7) step = 1 ;
-                else step = new Random().nextInt(2) + 1;
+                if (correction && distance == 7) step = 1;
                 stepList.add(step);
                 stepMap.put(i,stepList);//写入当前步数
                 distance = distance + step;
@@ -270,7 +296,7 @@ public class HorseRaceService {
         for(Integer Num :distanceMap.keySet()){
             if (distanceMap.get(Num)==8) NumList.add(Num);
         }
-        //随机筛选一个选手，记录并移出集合
+        //随机筛选一个选手，记录并移出到8集合
         Integer selectNum = NumList.get(new Random().nextInt(NumList.size()));
         NumList.remove(selectNum);
         distanceMap.clear();//使用完成，清除距离表
@@ -278,7 +304,7 @@ public class HorseRaceService {
         for(int i=1;i<=contestantMap.size();i++){
             List<Integer> stepList = stepMap.get(i);
             //给步数一个随机数，选中选手锁定为2，其他前排选手锁定为1
-            int step = new Random().nextInt(2) + 1;
+            int step = randomStep(contestantStatus.get(i));//用状态表去获取随机步数
             if(i==selectNum) step = 2;
             if(NumList.contains(i)) step = 1;
             stepList.add(step);
@@ -332,6 +358,22 @@ public class HorseRaceService {
             replayInfo.setReplayMessage(null);
         }).start();
         return selectNum;
+    }
+
+    /**
+     * 给选手计算前进步数的方法
+     *
+     * @param status 选手比赛状态概率，用于提供状态数据
+     * @return step 步数结果
+     */
+    private int randomStep(Float status){
+        int step;//随机步数
+        if (new Random().nextFloat() <= status){
+            step = 2;
+        }else {
+            step = 1;
+        }
+        return step;
     }
 
 }

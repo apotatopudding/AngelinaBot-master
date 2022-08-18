@@ -86,7 +86,7 @@ public class PersonalBlackBox {
                 boxInfo.setQQ(messageInfo.getQq());
                 boxList.put(boxName,boxInfo);
                 timeOfGroup.put(boxName,System.currentTimeMillis());//从创建时开始记录时间
-                //开启子线程，一分钟判断一次，当超时或者开关关闭时停止循环
+                //开启子线程，十秒判断一次，当超时或者开关关闭时停止循环
                 new Thread(() -> {
                     boolean timeSwitch = true;
                     try {

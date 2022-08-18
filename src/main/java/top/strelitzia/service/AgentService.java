@@ -62,7 +62,7 @@ public class AgentService {
         if (args.size() > 1) {
             pool = args.get(1);
         }
-        replayInfo.setReplayMessage(messageInfo.getName() + "\n抽取" + foundLimit(1, pool, messageInfo.getQq(), messageInfo.getName(), messageInfo.getGroupId()));
+        replayInfo.setReplayMessage("《"+ messageInfo.getName() + "》抽取" + foundLimit(1, pool, messageInfo.getQq(), messageInfo.getName(), messageInfo.getGroupId()));
         return replayInfo;
     }
 
@@ -74,7 +74,7 @@ public class AgentService {
         if (args.size() > 1) {
             pool = args.get(1);
         }
-        replayInfo.setReplayMessage(messageInfo.getName() + "\n抽取" + foundLimit(10, pool, messageInfo.getQq(), messageInfo.getName(), messageInfo.getGroupId()));
+        replayInfo.setReplayMessage("《"+ messageInfo.getName() + "》\n抽取" + foundLimit(10, pool, messageInfo.getQq(), messageInfo.getName(), messageInfo.getGroupId()));
         return replayInfo;
     }
 
@@ -206,8 +206,8 @@ public class AgentService {
         } else {
             if (messageInfo.getArgs().size() > 1) {
                 int found = Integer.parseInt(messageInfo.getArgs().get(1));
-                if (found > 300 || found < 0) {
-                    replayInfo.setReplayMessage("请控制范围0-300");
+                if (found > 100 || found < 0) {
+                    replayInfo.setReplayMessage("请控制范围0-100");
                 } else {
                     GroupAdminInfo groupAdminInfo = new GroupAdminInfo();
                     groupAdminInfo.setGroupId(messageInfo.getGroupId());
@@ -216,7 +216,7 @@ public class AgentService {
                     replayInfo.setReplayMessage("调整成功");
                 }
             } else {
-                replayInfo.setReplayMessage("请输入想要的抽卡数，范围0-300");
+                replayInfo.setReplayMessage("请输入想要的抽卡数，范围0-100");
             }
 
         }

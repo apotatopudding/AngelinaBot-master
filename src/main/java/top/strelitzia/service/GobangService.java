@@ -28,7 +28,7 @@ import java.util.List;
  * @author Cuthbert
  * @Date 2022/7/19 22:29
  **/
-@Service
+//@Service
 public class GobangService {
 
     private static final Set<Long> groupList = new HashSet<>();

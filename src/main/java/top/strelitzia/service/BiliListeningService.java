@@ -104,7 +104,7 @@ public class BiliListeningService {
                             sendMessageUtil.sendGroupMsg(replayInfo);
                             replayInfo.setReplayMessage(null);
                             replayInfo.getReplayImg().clear();
-                            Thread.sleep(new Random().nextInt(5) * 100);
+                            Thread.sleep(new Random().nextInt(5) * 1000);
                         }
                     }
                 }

@@ -11,7 +11,11 @@ public class OperatorBasicInfo {
     private Integer operatorClass;
     private String charId;
     private String drawName;
-    private String infoName;
+    private String cvNameOfCNMandarin;
+    private String cvNameOfCNTopolect;
+    private String cvNameOfJP;
+    private String cvNameOfKR;
+    private String cvNameOfEN;
     private String codeName;
     private String sex;
     private String comeFrom;
@@ -54,9 +58,7 @@ public class OperatorBasicInfo {
         return charId;
     }
 
-    public void setCharId(String charId) {
-        this.charId = charId;
-    }
+    public void setCharId(String charId) { this.charId = charId; }
 
     public String getDrawName() {
         drawName = drawName.replace(" ","");
@@ -67,13 +69,25 @@ public class OperatorBasicInfo {
         this.drawName = drawName;
     }
 
-    public String getInfoName() {
-        return infoName;
-    }
+    public String getCvNameOfCNMandarin() { return cvNameOfCNMandarin; }
 
-    public void setInfoName(String infoName) {
-        this.infoName = infoName;
-    }
+    public void setCvNameOfCNMandarin(String cvNameOfCNMandarin) { this.cvNameOfCNMandarin = cvNameOfCNMandarin; }
+
+    public String getCvNameOfCNTopolect() { return cvNameOfCNTopolect; }
+
+    public void setCvNameOfCNTopolect(String cvNameOfCNTopolect) { this.cvNameOfCNTopolect = cvNameOfCNTopolect; }
+
+    public String getCvNameOfJP() { return cvNameOfJP; }
+
+    public void setCvNameOfJP(String cvNameOfJP) { this.cvNameOfJP = cvNameOfJP; }
+
+    public String getCvNameOfKR() { return cvNameOfKR; }
+
+    public void setCvNameOfKR(String cvNameOfKR) { this.cvNameOfKR = cvNameOfKR; }
+
+    public String getCvNameOfEN() { return cvNameOfEN; }
+
+    public void setCvNameOfEN(String cvNameOfEN) { this.cvNameOfEN = cvNameOfEN; }
 
     public String getCodeName() {
         return codeName;
@@ -205,7 +219,7 @@ public class OperatorBasicInfo {
     public String toString() {
         return "基础档案：\n" +
                 "画师：" + drawName + '\t' +
-                "声优：" + infoName + '\n' +
+                "声优：" + cvNameOfJP + '\n' +
                 "代号：" + codeName + '\t' +
                 "性别：" + sex + '\t' +
                 "出身地：" + comeFrom + '\n' +

@@ -1,14 +1,22 @@
 package top.strelitzia.service;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mamoe.mirai.Bot;
+import net.mamoe.mirai.contact.ContactList;
+import net.mamoe.mirai.contact.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaEvent;
+import top.angelinaBot.annotation.AngelinaFriend;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.EventEnum;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.model.TextLine;
+import top.angelinaBot.util.SendMessageUtil;
+import top.strelitzia.dao.AdminUserMapper;
+import top.strelitzia.model.AdminUserInfo;
+import top.strelitzia.util.AdminUtil;
 import top.strelitzia.util.PetPetUtil;
 
 import javax.imageio.ImageIO;
@@ -17,6 +25,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 @Slf4j
@@ -25,6 +36,34 @@ public class PetPetService {
 
     @Autowired
     private PetPetUtil petPetUtil;
+
+    private static boolean close = true;
+
+    private final List<Long> groupList = new ArrayList<>(
+            Arrays.asList(740369727L)
+    );
+
+    @AngelinaEvent(event = EventEnum.BotJoinGroupEvent, description = "bot进群")
+    public ReplayInfo BotJoin(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        if (messageInfo.getMemberList().size()<20 && close){
+            if (!groupList.contains(messageInfo.getGroupId())) {
+                replayInfo.setReplayMessage("琴柳不支持测试群使用，即将自动退群" +
+                        "\n如果想要拥有一个自己的机器人，可以加入安洁莉娜克隆中心" +
+                        "\n克隆中心群号：235917683");
+                replayInfo.setQuitTime(3);
+            }
+        }else {
+            replayInfo.setReplayMessage("大家好！新人琴柳，向您报道！"
+                    + "您可以随时通过【琴柳】呼唤我"
+                    + "\n洁哥源码：https://github.com/Strelizia02/AngelinaBot"
+                    + "\n琴柳版源码：https://github.com/apotatopudding/AngelinaBot-master"
+                    + "\n欢迎加入琴柳主群：679030636"
+                    + "\n如果你也希望拥有一个自己的机器人的话，可以加入安洁莉娜克隆中心获取"
+                    + "\n克隆中心群号：235917683");
+        }
+        return replayInfo;
+    }
 
     @AngelinaEvent(event = EventEnum.NudgeEvent, description = "发送头像的摸头动图")
     @AngelinaGroup(keyWords = {"摸头", "摸我", "摸摸"}, description = "发送头像的摸头动图")
@@ -63,7 +102,11 @@ public class PetPetService {
     @AngelinaGroup(keyWords = {"口我","透透","透我","cao我","草我","艹我"}, description = "禁言功能")
     public ReplayInfo MuteSomeOne(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        replayInfo.setMuted((new Random().nextInt(5) + 1) * 60);
+        if(messageInfo.getBotPermission().getLevel()>messageInfo.getUserAdmin().getLevel()) {
+            replayInfo.setMuted((new Random().nextInt(5) + 1) * 60);
+        }else {
+            replayInfo.setReplayMessage("但愿你已认清自己的不义");
+        }
         return replayInfo;
     }
 
@@ -72,9 +115,7 @@ public class PetPetService {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         replayInfo.setReplayMessage("欢迎" + messageInfo.getName()
                                     + "，在这段同行路上，我想成为您可以依赖的伙伴。"
-                                    + "您可以随时通过【琴柳】呼唤我"
-                                    + "\n洁哥源码：https://github.com/Strelizia02/AngelinaBot"
-                                    + "\n琴柳版源码：https://github.com/apotatopudding/AngelinaBot-master");
+                                    + "您可以随时通过【琴柳】呼唤我");
         return replayInfo;
     }
 
@@ -97,11 +138,33 @@ public class PetPetService {
         return replayInfo;
     }
 
+    @AngelinaGroup(keyWords = {"我爱你","爱你"}, description = "发送琴柳感语音")
+    public ReplayInfo loveAudio(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        String folderPath = "runFile/Audio/cao";
+        File folder = new File(folderPath);
+        File[] files = folder.listFiles();
+        if(files == null){
+            replayInfo.setReplayMessage("文件夹不存在，请检查文件夹");
+            return replayInfo;
+        }
+        if(folder.isDirectory() && files.length != 0) {
+            int selectAudioIndex = new SecureRandom().nextInt(files.length);
+            File selectFile = files[selectAudioIndex];
+            String oriFileName = selectFile.getAbsolutePath();
+            replayInfo.setReplayAudio(new File(oriFileName));
+        }else {log.info("引用了一个空文件或空文件夹");}
+        return replayInfo;
+    }
+
     @AngelinaEvent(event = EventEnum.MemberLeaveEvent, description = "退群提醒")
     public ReplayInfo memberLeaven(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        replayInfo.setReplayMessage("一路上摆脱深池的追杀很不容易。后来我和"+ messageInfo.getName() +"说过话，"+ messageInfo.getName() +"好像不记得我了。对"+ messageInfo.getName() +"来说.......是好事吧?"
-                + "\n有机会的话，我还想找"+ messageInfo.getName() +"聊聊诗歌和小说。啊，能交个朋友就更好啦。");
+        replayInfo.setReplayMessage(messageInfo.getName()+"离开了我们！" +
+                "\n你有没有听见群友的悲鸣！" +
+                "\n你有没有感受到"+messageInfo.getGroupName()+"在分崩离析！" +
+                "\n你不曾注意"+messageInfo.getGroupOwnerName()+"在狞笑" +
+                "\n你有没有想过，"+messageInfo.getName()+"不再是朋友！"+messageInfo.getGroupName()+"不再是家园！");
         return replayInfo;
     }
 
@@ -113,8 +176,6 @@ public class PetPetService {
         replayInfo.setReplayImg(new File(path));
         return replayInfo;
     }
-
-
 
     @AngelinaGroup(keyWords = {"壁纸"}, description = "发送一张壁纸库的图片")
     public ReplayInfo GroupWallPaper(MessageInfo messageInfo) {
@@ -216,6 +277,52 @@ public class PetPetService {
         }
         else {log.info("引用了一个空文件或空文件夹");}
         replayInfo.setRecallTime(60);
+        return replayInfo;
+    }
+
+    @Autowired
+    private AdminUserMapper adminUserMapper;
+
+    @Autowired
+    private SendMessageUtil sendMessageUtil;
+
+
+    @AngelinaFriend(keyWords = {"群组清查"})
+    public ReplayInfo find(MessageInfo messageInfo) throws InterruptedException {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
+        if (AdminUtil.getSqlAdmin(messageInfo.getQq(), admins)) {
+            if (messageInfo.getArgs().size()>1){
+                if (messageInfo.getArgs().get(1).equals("暂时关闭")) {
+                    close = false;
+                    new Thread(()->{
+                        try{Thread.sleep(300000);}catch (InterruptedException e){log.error(e.toString());}
+                        close = true;
+                        replayInfo.setReplayMessage("已重新开启");
+                        sendMessageUtil.sendFriendMsg(replayInfo);
+                    }).start();
+                    replayInfo.setReplayMessage("已关闭群组人数清查，持续时间五分钟，五分钟后将会自动再次开启群组人数清查");
+                }
+            }else {
+                replayInfo.setReplayMessage("开始清理");
+                sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.setReplayMessage(null);
+                Bot bot = Bot.getInstance(replayInfo.getLoginQQ());
+                ContactList<Group> groups = bot.getGroups();
+                for(Group group : groups){
+                    if (group.getMembers().size()<20 && !groupList.contains(group.getId())){
+                        group.sendMessage("琴柳不支持测试群使用，即将自动退群" +
+                                "\n如果想要拥有一个自己的机器人，可以加入安洁莉娜克隆中心" +
+                                "\n克隆中心群号：235917683");
+                        Thread.sleep(3000);
+                        group.quit();
+                    }
+                }
+                replayInfo.setReplayMessage("清理完成");
+            }
+        }else {
+            replayInfo.setReplayMessage("您没有权限");
+        }
         return replayInfo;
     }
 

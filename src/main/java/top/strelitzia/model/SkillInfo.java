@@ -12,51 +12,27 @@ public class SkillInfo {
     private String skillPng;
     private String skillIdYj;
 
-    public Integer getSkillId() {
-        return skillId;
-    }
+    public Integer getSkillId() { return skillId; }
 
-    public void setSkillId(Integer skillId) {
-        this.skillId = skillId;
-    }
+    public void setSkillId(Integer skillId) { this.skillId = skillId; }
 
-    public Integer getSkillIndex() {
-        return skillIndex;
-    }
+    public Integer getSkillIndex() { return skillIndex; }
 
-    public void setSkillIndex(Integer skillIndex) {
-        this.skillIndex = skillIndex;
-    }
+    public void setSkillIndex(Integer skillIndex) { this.skillIndex = skillIndex; }
 
-    public String getSkillName() {
-        return skillName;
-    }
+    public String getSkillName() { return skillName; }
 
-    public void setSkillName(String skillName) {
-        this.skillName = skillName;
-    }
+    public void setSkillName(String skillName) { this.skillName = skillName; }
 
-    public String getSkillPng() {
-        return skillPng;
-    }
+    public String getSkillPng() { return skillPng; }
 
-    public void setSkillPng(String skillPng) {
-        this.skillPng = skillPng;
-    }
+    public void setSkillPng(String skillPng) { this.skillPng = skillPng; }
 
-    public Integer getOperatorId() {
-        return operatorId;
-    }
+    public Integer getOperatorId() { return operatorId; }
 
-    public void setOperatorId(Integer operatorId) {
-        this.operatorId = operatorId;
-    }
+    public void setOperatorId(Integer operatorId) { this.operatorId = operatorId; }
 
-    public String getSkillIdYj() {
-        return skillIdYj;
-    }
+    public String getSkillIdYj() { return skillIdYj; }
 
-    public void setSkillIdYj(String skillIdYj) {
-        this.skillIdYj = skillIdYj;
-    }
+    public void setSkillIdYj(String skillIdYj) { this.skillIdYj = skillIdYj; }
 }

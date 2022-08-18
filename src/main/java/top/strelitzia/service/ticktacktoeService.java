@@ -60,16 +60,21 @@ public class TicktacktoeService {
             AngelinaListener angelinaListener = new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String s = message.getText();
-                    if(message.getText() == null) s ="  ";
-                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                            s.equals("加入");
+                    boolean reply;
+                    try {
+                        reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                message.getText().equals("加入");
+                    }catch (NullPointerException e){
+                        reply = false;
+                    }
+                    return reply;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());
             recallOfJoin = AngelinaEventSource.waiter(angelinaListener).getMessageInfo();
             if (recallOfJoin == null) {
                 replayInfo.setReplayMessage("操作超时，对局取消");
+                groupList.remove(messageInfo.getGroupId());
                 return replayInfo;
             }
             if (recallOfJoin.getQq().equals(messageInfo.getQq())) {
@@ -89,15 +94,21 @@ public class TicktacktoeService {
             AngelinaListener angelinaListener = new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String s = message.getText();
-                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                            s.equals("扔骰子");
+                    boolean reply;
+                    try {
+                        reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                message.getText().equals("扔骰子");
+                    }catch (NullPointerException e){
+                        reply = false;
+                    }
+                    return reply;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());
             MessageInfo recallOfSelect = AngelinaEventSource.waiter(angelinaListener).getMessageInfo();
             if (recallOfSelect == null) {
                 replayInfo.setReplayMessage("操作超时，对局取消");
+                groupList.remove(messageInfo.getGroupId());
                 return replayInfo;
             }else {
                 //发送扔骰子时确定先后顺序
@@ -158,16 +169,23 @@ public class TicktacktoeService {
             AngelinaListener angelinaListener = new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                            QQList.contains(message.getQq()) &&
-                            message.getText().matches("[0-9]+");
-                    //message.getText().matches("^[0-9]+(.[0-9]+)?$");
+                    boolean reply;
+                    try {
+                        reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                QQList.contains(message.getQq()) &&
+                                message.getText().matches("[0-9]+");
+                        //message.getText().matches("^[0-9]+(.[0-9]+)?$");
+                    }catch (NullPointerException e){
+                        reply = false;
+                    }
+                    return reply;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());
             MessageInfo recall = AngelinaEventSource.waiter(angelinaListener).getMessageInfo();
             if (recall == null) {
                 replayInfo.setReplayMessage("操作超时，对局取消");
+                groupList.remove(messageInfo.getGroupId());
                 return replayInfo;
             }
             if (now.equals(recall.getQq())) {
@@ -230,6 +248,7 @@ public class TicktacktoeService {
                 MessageInfo recall2 = AngelinaEventSource.waiter(toAgain).getMessageInfo();
                 if (recall2 == null) {
                     replayInfo.setReplayMessage("您太长时间没回答我，对局已经关闭了");
+                    groupList.remove(messageInfo.getGroupId());
                     return replayInfo;
                 }
                 if(recall2.getText().equals("是")) {

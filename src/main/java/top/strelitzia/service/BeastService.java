@@ -27,7 +27,7 @@ public class BeastService {
             String str = messageInfo.getArgs().get(1);
             str = str.substring(3, str.length() - 1);
             String string = FromHex(BeastToHex(str));
-            replayInfo.setReplayMessage(string);
+            replayInfo.setReplayMessage("”"+string+"“");
         } else {
             replayInfo.setReplayMessage("请输入需要解密的内容");
         }

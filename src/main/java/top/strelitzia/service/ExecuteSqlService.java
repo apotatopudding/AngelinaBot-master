@@ -1,7 +1,10 @@
 package top.strelitzia.service;
 
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import top.angelinaBot.annotation.AngelinaFriend;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
@@ -19,6 +22,8 @@ import java.util.List;
  * @author strelitzia
  * @Date 2022/05/03 14:38
  **/
+
+@Slf4j
 @Service
 public class ExecuteSqlService {
 
@@ -29,10 +34,11 @@ public class ExecuteSqlService {
     private AdminUserMapper adminUserMapper;
 
     @Autowired
-    private UserFoundMapper userFoundMapper;
+    private SendMessageUtil sendMessageUtil;
 
     @Autowired
-    private SendMessageUtil sendMessageUtil;
+    private MiraiFrameUtil miraiFrameUtil;
+
 
     @AngelinaGroup(keyWords = {"sql", "SQL"})
     public ReplayInfo ExecuteSql(MessageInfo messageInfo) {
@@ -57,11 +63,11 @@ public class ExecuteSqlService {
     }
 
     @AngelinaGroup(keyWords = {"群发消息"})
+    @AngelinaFriend(keyWords = {"群发消息"})
     public ReplayInfo sendGroupMessage(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        boolean b = AdminUtil.getSqlAdmin(messageInfo.getQq(), admins);
-        if (b) {
+        if (AdminUtil.getSqlAdmin(messageInfo.getQq(), admins)) {
             if (messageInfo.getArgs().size() > 1) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 1; i < messageInfo.getArgs().size(); i++) {
@@ -69,7 +75,7 @@ public class ExecuteSqlService {
                 }
                 replayInfo.setReplayMessage(sb.toString());
             }
-            for (Long groupId: MiraiFrameUtil.messageIdMap.keySet()) {
+            for (Long groupId : miraiFrameUtil.BotGroupMap().keySet()) {
                 List<String> imgUrlList = messageInfo.getImgUrlList();
                 for (String url: imgUrlList) {
                     replayInfo.setReplayImg(url);
@@ -80,6 +86,11 @@ public class ExecuteSqlService {
                 sendMessageUtil.sendGroupMsg(replayInfo);
                 replayInfo.setRecallTime(null);
                 replayInfo.getReplayImg().clear();
+                try{
+                    Thread.sleep(10000);
+                }catch (InterruptedException e){
+                    log.error(e.toString());
+                }
             }
             replayInfo.getReplayImg().clear();
             replayInfo.setReplayMessage(null);

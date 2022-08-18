@@ -57,6 +57,10 @@ public class GuessOperator {
             if (messageInfo.getArgs().size() > 1) {
                 num = Integer.parseInt(messageInfo.getArgs().get(1));
             }
+            if (num>99){
+                replayInfo.setReplayMessage("这么多我本子写不下啦！");
+                return replayInfo;
+            }
             replayInfo.setReplayMessage("本群猜干员正式开始，请听题");
             sendMessageUtil.sendGroupMsg(replayInfo);
             replayInfo.setReplayMessage(null);
@@ -87,13 +91,19 @@ public class GuessOperator {
                     AngelinaListener angelinaListener = new AngelinaListener() {
                         @Override
                         public boolean callback(MessageInfo message) {
+                            boolean relay;
+                            try {
                                 String name = message.getText();
                                 String realName = nickNameMapper.selectNameByNickName(name);
                                 if (realName != null && !realName.equals("")) {
                                     name = realName;
                                 }
-                                return message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                relay = message.getGroupId().equals(messageInfo.getGroupId()) &&
                                         (allOperator.contains(name) || name.equals("提示"));
+                            }catch (NullPointerException e){
+                                relay = false;
+                            }
+                            return relay;
                         }
                     };
                     angelinaListener.setGroupId(messageInfo.getGroupId());

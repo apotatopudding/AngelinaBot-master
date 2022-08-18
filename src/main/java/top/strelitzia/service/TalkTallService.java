@@ -61,7 +61,7 @@ public class TalkTallService {
             replayInfo.setReplayMessage("游戏即将开始，发起人无需再次报名");
             sendMessageUtil.sendGroupMsg(replayInfo);
         }
-        replayInfo.setReplayMessage("请输入【加入】加入比赛");
+        replayInfo.setReplayMessage("请输入【加入】加入比赛,了解玩法可以使用（吹牛描述）指令");
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.setReplayMessage(null);
         Map<Long,String> participantQQMap = new HashMap<>();//参与QQ的列表
@@ -73,13 +73,13 @@ public class TalkTallService {
                 //只有返回为加入时才生效
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String participant;
-                    if(message.getText()==null){
-                        participant = "任何非报名语句皆可";
-                    }else {
-                        participant = message.getText();
+                    boolean reply;
+                    try {
+                        reply = message.getGroupId().equals(messageInfo.getGroupId()) && message.getText().equals("加入");
+                    }catch (NullPointerException e){
+                        reply = false;
                     }
-                    return message.getGroupId().equals(messageInfo.getGroupId()) && participant.equals("加入");
+                    return reply;
                 }
             };
             //监听等待
@@ -93,7 +93,7 @@ public class TalkTallService {
                     groupList.remove(messageInfo.getGroupId());
                     return replayInfo;
                 }else {
-                    replayInfo.setReplayMessage("等待时间超时，暂无人继续加入，游戏开始");
+                    replayInfo.setReplayMessage("等待时间超时，已加入"+participantQQMap.size()+"人，暂无人继续加入，游戏开始");
                     sendMessageUtil.sendGroupMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
                     break;
@@ -117,7 +117,7 @@ public class TalkTallService {
             participantQQMap.put(recall.getQq(),recall.getName());
             replayInfo.setReplayMessage(recall.getName()+"加入成功");
             if(i==5){
-                replayInfo.setReplayMessage("所有人已经就绪，游戏开始");
+                replayInfo.setReplayMessage("五人已满，所有人已经就绪，游戏开始");
             }
             sendMessageUtil.sendGroupMsg(replayInfo);
             replayInfo.setReplayMessage(null);
@@ -131,13 +131,13 @@ public class TalkTallService {
             boolean repetition = true;//顺子检测开关
             while (repetition) {
                 //一轮加一个骰子量
-                for (i = 0; i < 5; i++) {
+                for (i = 0; i < 6; i++) {
                     int random = new Random().nextInt(6) + 1;
                     list.add(random);
                 }
-                //对结果去重，如果去重没有减少代表全是单骰（顺子），继续循环扔，如果不是就关闭退出循环
+                //对结果去重，如果去重没有减少代表是顺子，继续循环扔，如果不是就关闭退出循环
                 HashSet<Integer> set = new HashSet<>(list);
-                if (set.size()!=5){
+                if (set.size()!=6){
                     repetition = false;
                 }
             }
@@ -153,7 +153,7 @@ public class TalkTallService {
                 }
             }
             replayInfo.setQq(QQ);
-            replayInfo.setReplayMessage("你摇了摇骰盅，看了一眼，你丢出了【"+list.get(0)+"】【"+list.get(1)+"】【"+list.get(2)+"】【"+list.get(3)+"】【"+list.get(4)+"】");
+            replayInfo.setReplayMessage("你摇了摇骰盅，看了一眼，你丢出了【"+list.get(0)+"】【"+list.get(1)+"】【"+list.get(2)+"】【"+list.get(3)+"】【"+list.get(4)+"】【"+list.get(5)+"】");
             try {
                 sendMessageUtil.sendGroupTempMsg(replayInfo);
             }catch (Exception e){
@@ -173,8 +173,8 @@ public class TalkTallService {
         replayInfo.setReplayMessage("所有人骰子投掷完毕，开始叫数（例如：1个3）");
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.setReplayMessage(null);
-        boolean close = false,right = false,calledOne = false;
-        int a=1,b=1;
+        boolean close = false,right,calledOne = false;
+        int a=0,b=1;
         Long QQByOpened= 0L,QQByOpen= 0L;
         String nameByOpened = "",nameByOpen= "";
         while (!close) {
@@ -188,18 +188,23 @@ public class TalkTallService {
                     AngelinaListener angelinaListener = new AngelinaListener() {
                         @Override
                         public boolean callback(MessageInfo message) {
-                            String s = message.getText();
-                            if (s == null) s = "任意词";
-                            boolean isNum = false;
-                            if(!s.equals("开你")&&s.contains("个")) {
-                                int point = s.lastIndexOf("个");
-                                String s1 = s.substring(0, point);
-                                String s2 = s.substring(point + 1);
-                                if(s1.matches("[0-9]+") && s2.matches("[0-9]+")) isNum = true;
+                            boolean reply;
+                            try {
+                                boolean isNum = false;
+                                String s = message.getText();
+                                if(!s.equals("开你")&&s.contains("个")) {
+                                    int point = s.lastIndexOf("个");
+                                    String s1 = s.substring(0, point);
+                                    String s2 = s.substring(point + 1);
+                                    if(s1.matches("[0-9]+") && s2.matches("[0-9]+")) isNum = true;
+                                }
+                                reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                        entry.getKey().equals(message.getQq()) &&
+                                        (isNum || s.equals("开你"));
+                            }catch (NullPointerException e){
+                                reply = false;
                             }
-                            return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                                    entry.getKey().equals(message.getQq()) &&
-                                    (isNum || s.equals("开你"));
+                            return reply;
                         }
                     };
                     angelinaListener.setGroupId(messageInfo.getGroupId());
@@ -226,7 +231,7 @@ public class TalkTallService {
                     if (point!=-1){
                         int A = Integer.parseInt(s.substring(0, point));
                         int B = Integer.parseInt(s.substring(point + 1));
-                        if (A > a || B > b) {
+                        if (A > a || A == a && B > b) {
                             if (B>6){
                                 replayInfo.setReplayMessage("骰子中没有比6还大的呢");
                                 sendMessageUtil.sendGroupMsg(replayInfo);
@@ -239,8 +244,12 @@ public class TalkTallService {
                             nameByOpened = entry.getValue();
                             right = true;
                             if (B==1) calledOne = true;
+                        } else if(A < a){
+                            replayInfo.setReplayMessage("骰子的个数不能低于上家叫的个数呢");
+                            sendMessageUtil.sendGroupMsg(replayInfo);
+                            replayInfo.setReplayMessage(null);
                         } else {
-                            replayInfo.setReplayMessage("骰子的点数和数量任意一个要比上家叫的更大才行哦");
+                            replayInfo.setReplayMessage("骰子的个数或点数要比上家叫的更大才行呢");
                             sendMessageUtil.sendGroupMsg(replayInfo);
                             replayInfo.setReplayMessage(null);
                         }
@@ -283,11 +292,28 @@ public class TalkTallService {
         }
         for (Long QQ : participantQQMap.keySet()){
             int integral = 12;
-            if(QQ.equals(QQByOpen)||QQ.equals(QQByOpened)) integral = 20;
+            if(QQ.equals(QQByOpen)||QQ.equals(QQByOpened)) integral = 16;
             this.integralMapper.increaseIntegralByGroupId(messageInfo.getGroupId(),QQ,integral);
 
         }
         groupList.remove(messageInfo.getGroupId());
+        return replayInfo;
+    }
+
+    @AngelinaGroup(keyWords = {"吹牛描述"},description = "吹牛的游戏规则描述")
+    public ReplayInfo talkTallDescription(MessageInfo messageInfo){
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        String s = "吹牛规则如下：\n" +
+                "每人一共六个骰子各摇一次（机器人自动完成），看清自己盅内的点数，猜测对方的点数，然后从第一位开始吆喝所有参与者骰盅内共有多少个某点数的骰子，" +
+                "叫法为M个N(如2个3点，2个6点，3个4点等)\n" +
+                "对方分析判断此叫法真实与否，信之为真则下家接着叫，叫法同样为M个N。" +
+                "但M不可小于上家，当M不变时，N只能增加不可减少，M增加时N可叫任意点数" +
+                "（比如上家叫的是3个3，下家可以叫3个5或者4个1。叫3个1或1个5都属违规）\n"+
+                "若下家不信则开盅验证，合计所有人的骰盅内的有该点数的骰子个数之和，若确至少有 M个N点，则上家赢，" +
+                "反之则下家赢(如上家叫5个6，开盅时若只有4个6点，则上家输，若有5个或更多个6点，则下家输)。\n" +
+                "另外，1点可变作任意点数，但一旦被叫过便只能作回自己；\n" +
+                "如果骰子出现顺子（即出现123456点数情况）机器人会自动重摇。\n";
+        replayInfo.setReplayMessage(s);
         return replayInfo;
     }
 

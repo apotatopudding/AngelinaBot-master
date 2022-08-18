@@ -33,11 +33,11 @@ public interface OperatorInfoMapper {
     //条件模糊查询画师
     List<String> getAllDrawNameLikeStr(String str);
 
-    //查找全部声优
-    List<String> getAllInfoName();
+    //按版本查找全部声优
+    List<String> getAllInfoName(String str);
 
-    //条件模糊查询声优
-    List<String> getAllInfoNameLikeStr(String str);
+    //按版本模糊查询声优
+    List<String> getAllInfoNameLikeStr(String area,String str);
 
     //根据生日查找干员
     List<String> getOperatorByBirthday(String birthday);
@@ -66,8 +66,8 @@ public interface OperatorInfoMapper {
     //插入干员头像
     Integer insertOperatorAvatarPngById(@Param("id") String id, @Param("avatar") String avatar);
 
-    //插入干员立绘
-    Integer insertOperatorSkillPngById(@Param("id") Integer id, @Param("base") String base);
+    //插入技能图标
+    Integer insertOperatorSkillPngById(@Param("yjId") String yjId, @Param("fileName") String fileName);
 
     //根据干员名查找干员天赋
     List<TalentInfo> getOperatorTalent(String name);

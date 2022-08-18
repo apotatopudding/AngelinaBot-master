@@ -36,7 +36,12 @@
     </select>
 
     <select id="selectSkillPngByName" resultType="java.lang.String">
-        select skill_png from t_operator_skill where skill_id = #{skillId}
+        select skill_png
+        from
+        t_operator_skill_png a LEFT JOIN
+        t_operator_skill b ON a.skill_id_yj = b.skill_id_yj
+        where
+        skill_id = #{skillId}
     </select>
 
     <select id="selectSkillNameById" resultType="java.lang.String">
