@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.strelitzia.dao.LookWorldMapper">
+    <resultMap id="BaseResultMap" type="top.strelitzia.model.LookWorldInfo">
+        <result column="group_id" property="groupId" jdbcType="BIGINT"/>
+        <result column="look_world_subscribe" property="lookWorldSubscribe" jdbcType="INTEGER"/>
+        <result column="look_world_time" property="lookWorldTime" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="selectStateByGroupId" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT
+        look_world_subscribe
+        FROM
+        a_look_world
+        WHERE
+        group_id = #{groupId}
+    </select>
+
+    <select id="selectGroupIdBySubscribe" resultType="java.lang.Long">
+        SELECT
+        group_id
+        FROM
+        a_look_world
+        WHERE
+        look_world_subscribe = 1
+    </select>
+
+    <update id="insertStateByGroupId">
+        INSERT INTO a_look_world (group_id, look_world_subscribe)
+        VALUES
+        (#{groupId,jdbcType=VARCHAR}, #{lookWorld})
+        ON CONFLICT(group_id)
+        DO update set
+        look_world_subscribe = #{lookWorld}
+    </update>
+
+    <select id="selectTimeByGroupId" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT
+        look_world_time
+        FROM
+        a_look_world
+        WHERE
+        group_id = #{groupId}
+    </select>
+
+    <update id="insertTimeByGroupId">
+        INSERT INTO a_look_world (group_id, look_world_time)
+        VALUES
+        (#{groupId,jdbcType=VARCHAR},1)
+        ON CONFLICT(group_id)
+        DO update set
+        look_world_time = look_world_time + 1;
+    </update>
+
+    <update id="updateTime">
+        UPDATE
+        a_look_world
+        SET
+        look_world_time = 0
+    </update>
+
+</mapper>
+

@@ -74,6 +74,7 @@
         WHERE
         operator_name = #{name}
         AND skill_index = #{index}
+        AND char_id is not null
     </select>
 
 </mapper>

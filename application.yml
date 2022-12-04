@@ -1,28 +1,32 @@
 server:
-  port:
+  port: '3036'
 spring:
   main:
     allow-bean-definition-overriding: true
 userConfig:
-  # 多个选项用空格隔开
   botNames: ''
   qqList: ''
   pwList: ''
+  ownerQQ: ''
+  adminQQ: ''
+  testGroup: ''
 scheduled:
-  # 每5分钟监听一次B站动态
   biliJob: 0 */5 * * * ?
-  # 每天早8点播报干员庆生
   birthdayJob: 0 0 8 */1 * ?
-  # 每10分钟检查一次数据更新
+  lookWorldJob: 0 30 7 */1 * ?
   updateJob: 0 */10 * * * ?
-  # 每周日晚5点剿灭提醒
-  exterminateJob: 0 18 22 ? * SUN
-  # 每天4点抽卡次数清空
+  exterminateJob: 0 0 17 ? * 7
   cleanJob: 0 0 4 */1 * ?
-  # 每天0点执行每日任务
   dayJob: 0 0 0 */1 * ?
-baiduConfig:
-# 务必记住冒号后面有一个空格
-  APP_ID: 
-  API_KEY: 
-  SECRET_KEY: 
+  picJob: 0 0 1 */1 * ?
+  monthJob: 0 0 0 1 * ?
+baiduIdentifyConfig:
+  APP_ID: ''
+  API_KEY: ''
+  SECRET_KEY: ''
+baiduAuditConfig:
+  APP_ID: ''
+  API_KEY: ''
+  SECRET_KEY: ''
+APIConfig:
+  token: ''

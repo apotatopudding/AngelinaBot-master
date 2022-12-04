@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.strelitzia.dao.PictureLibraryMapper">
+
+    <resultMap id="BaseResultMap" type="top.strelitzia.model.PictureLibraryInfo">
+        <result column="folder" property="folder" jdbcType="VARCHAR"/>
+        <result column="picture_id" property="pictureId" jdbcType="INTEGER"/>
+        <result column="format" property="format" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="selectAllPictureByType" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        folder, picture_id, format
+        FROM
+        a_picture_library
+        WHERE
+        type = 1 AND audit = 1
+        ORDER BY RANDOM()
+        LIMIT 1
+    </select>
+
+    <select id="selectPictureWithoutCheckByType" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        folder, picture_id, format
+        FROM
+        a_picture_library
+        WHERE
+        type = #{type} AND audit = 0
+        ORDER BY RANDOM()
+        LIMIT 1
+    </select>
+
+    <select id="selectFolderList" resultType="java.lang.String">
+        SELECT
+        folder
+        FROM
+        a_picture_library
+        WHERE
+        type = 1
+        GROUP BY
+        folder
+    </select>
+
+    <select id="selectAllPictureByFolder" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        picture_id, format
+        FROM
+        a_picture_library
+        WHERE
+        folder = #{folder} AND audit = 1 AND type = 1
+    </select>
+
+    <insert id="insectPicture" parameterType="top.strelitzia.model.PictureLibraryInfo">
+        INSERT INTO
+        a_picture_library(folder, type, audit, format)
+        VALUES
+        (#{folder}, #{type}, 0, #{format})
+    </insert>
+
+    <select id="selectId" resultType="java.lang.Integer">
+        SELECT MAX(picture_id) FROM a_picture_library
+    </select>
+
+    <update id="updateAuditAndType" parameterType="java.lang.Integer">
+        UPDATE a_picture_library SET audit = #{audit}, type = 1 WHERE picture_id = #{pictureId}
+    </update>
+
+    <delete id="deletePictureByPictureId">
+        DELETE FROM a_picture_library
+        WHERE picture_id = #{pictureId}
+    </delete>
+    
+    <select id="selectAudit" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT
+        count(qq)
+        FROM
+        a_picture_audit
+        WHERE
+        qq = #{qq}
+    </select>
+
+    <insert id="insertAudit">
+        INSERT INTO
+        a_picture_audit(qq)
+        VALUES
+        (#{qq})
+    </insert>
+
+    <delete id="deleteAudit">
+        DELETE FROM
+        a_picture_audit
+        WHERE
+        qq = #{qq}
+    </delete>
+
+</mapper>
+

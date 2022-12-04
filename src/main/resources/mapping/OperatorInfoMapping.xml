@@ -63,6 +63,24 @@
         OR operator_name like '%'||#{info}||'%'
     </select>
 
+    <select id="getOperatorNameByClass" parameterType="java.lang.Integer" resultType="java.lang.String">
+        SELECT
+            operator_name
+        FROM
+            t_operator
+        WHERE
+            operator_class = #{info}
+    </select>
+
+    <select id="getOperatorNameByRarity" parameterType="java.lang.Integer" resultType="java.lang.String">
+        SELECT
+            operator_name
+        FROM
+            t_operator
+        WHERE
+            operator_rarity = #{info}
+    </select>
+
     <select id="getOperatorByBirthday" parameterType="java.lang.String" resultType="java.lang.String">
         SELECT
             operator_name
@@ -91,13 +109,13 @@
             char_id
     </select>
 
-    <select id="getAllOperatorIdAndName" resultMap="NameResultMap">
+    <select id="getAllIdAndNameAndCV" resultMap="NameResultMap">
         SELECT
             char_id, operator_name
         FROM
             t_operator
         WHERE
-            char_id IS NOT NULL
+            ${str} IS NOT NULL AND char_id IS NOT NULL
         GROUP BY
             char_id
     </select>
@@ -222,6 +240,48 @@
         WHERE
             operator_name = #{name}
         Limit 1
+    </select>
+    <select id="selectOperatorVoiceByCharIdAndName" resultType="java.lang.Integer">
+        SELECT
+            COUNT( char_id )
+        FROM
+            t_operator_voice
+        WHERE
+            char_id = #{charId}
+          AND voice_name = #{name}
+          AND type = #{type}
+    </select>
+
+    <insert id="insertOperatorVoice">
+        INSERT INTO t_operator_voice
+            (char_id, type, voice_name, file)
+        VALUES(#{charId}, #{type}, #{name}, #{file})
+    </insert>
+
+    <select id="selectOperatorVoiceByName" resultType="java.lang.String">
+        SELECT
+            file
+        FROM
+            t_operator_voice v
+                LEFT JOIN t_operator o ON o.char_id = v.char_id
+        WHERE
+            operator_name = #{name}
+    </select>
+
+    <select id="selectOperatorVoiceByNameAndVoice" resultType="java.lang.String">
+        SELECT
+        file
+        FROM
+        t_operator_voice v
+        LEFT JOIN t_operator o ON o.char_id = v.char_id
+        WHERE
+        operator_name = #{name}
+        <if test = "voiceName != null">
+            AND voice_name = #{voiceName}
+        </if>
+        <if test = "type != null">
+            AND type = #{type}
+        </if>
     </select>
 
     <insert id="insertOperatorPngById">
