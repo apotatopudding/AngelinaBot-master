@@ -1,6 +1,7 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.BiliCount;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
  * @author wangzy
  * @Date 2021/1/12 17:13
  **/
+@Repository
 public interface BiliMapper {
     //获取所有uid
     List<BiliCount> getBiliCountList();

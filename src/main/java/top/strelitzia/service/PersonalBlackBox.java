@@ -32,7 +32,7 @@ public class PersonalBlackBox {
      * 创建卡池并录取卡池信息，随后创建子线程以查询，符合条件则删除卡池
      * 每次创建卡池需要扣除五分积分
      */
-    @AngelinaGroup(keyWords = {"创建卡池"},description = "新建一个自定义卡池")
+    @AngelinaGroup(keyWords = {"创建卡池"},description = "新建一个自定义卡池", sort = "娱乐功能",funcClass = "自定义卡池")
     public ReplayInfo createBox(MessageInfo messageInfo){
         ReplayInfo replayInfo =new ReplayInfo(messageInfo);
         if(messageInfo.getArgs().size()>1){
@@ -130,7 +130,7 @@ public class PersonalBlackBox {
     /**
      * 抽卡需要判断条件，有卡池，本群组，每次抽卡完毕需要记录最后抽卡的时间
      */
-    @AngelinaGroup(keyWords = {"抽卡"},description = "抽取自定义的卡池")
+    @AngelinaGroup(keyWords = {"抽卡"},description = "抽取自定义的卡池", sort = "娱乐功能",funcClass = "自定义卡池")
     public ReplayInfo drawCard(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size()>1){
@@ -152,7 +152,7 @@ public class PersonalBlackBox {
     /**
      * 销毁卡池需要满足条件，有卡池，本人创建，每次主动销毁给销毁人奖励性加分两分
      */
-    @AngelinaGroup(keyWords = {"销毁卡池"},description = "销毁固定的卡池")
+    @AngelinaGroup(keyWords = {"销毁卡池"},description = "销毁固定的卡池", sort = "娱乐功能",funcClass = "自定义卡池")
     public ReplayInfo deleteBox(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size()>1){
@@ -181,7 +181,7 @@ public class PersonalBlackBox {
     /**
      * 添加卡片需要满足条件，有卡池，本群组，本人创建，添加卡片需要同时告知卡池和卡牌信息
      */
-    @AngelinaGroup(keyWords = {"添加卡片"},description = "给已知卡池添加一张新的卡片")
+    @AngelinaGroup(keyWords = {"添加卡片"},description = "给已知卡池添加一张新的卡片", sort = "娱乐功能",funcClass = "自定义卡池")
     public ReplayInfo addBox(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size()>1){
@@ -207,7 +207,7 @@ public class PersonalBlackBox {
     /**
      * 删除卡片需要满足条件，有卡池，本群组，本人创建，添加卡片需要同时告知卡池和卡牌信息
      */
-    @AngelinaGroup(keyWords = {"删除卡片"},description = "给已知卡池删除一张新的卡片")
+    @AngelinaGroup(keyWords = {"删除卡片"},description = "给已知卡池删除一张新的卡片", sort = "娱乐功能",funcClass = "自定义卡池")
     public ReplayInfo removeBox(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size()>1){

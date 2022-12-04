@@ -17,9 +17,6 @@ public class AdminUserInfo {
     private Integer six;
     //黑到死权限
     private Integer black;
-    //SQL查询权限
-    private Integer sql;
-
 
     public Long getQq() {
         return qq;
@@ -59,14 +56,6 @@ public class AdminUserInfo {
 
     public void setBlack(Integer black) {
         this.black = black;
-    }
-
-    public Integer getSql() {
-        return sql;
-    }
-
-    public void setSql(Integer sql) {
-        this.sql = sql;
     }
 
 }

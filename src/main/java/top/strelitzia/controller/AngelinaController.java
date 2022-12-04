@@ -14,7 +14,7 @@ import top.strelitzia.model.AdminUserInfo;
 import top.strelitzia.model.UserFoundInfo;
 import top.strelitzia.service.AgentService;
 import top.strelitzia.service.GroupAdminInfoService;
-import top.strelitzia.util.AdminUtil;
+import top.strelitzia.util.FoundUtil;
 
 import javax.imageio.ImageIO;
 import java.io.ByteArrayOutputStream;
@@ -60,7 +60,7 @@ public class AngelinaController {
         //今日抽卡数
         Integer today = userFoundInfo.getTodayCount();
         List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        boolean b = AdminUtil.getFoundAdmin(qq, admins);
+        boolean b = FoundUtil.getFoundAdmin(qq, admins);
 
         if (today < limit || b) {
             String s = agentService.FoundAgentByNum(10, pool, qq, sum, name, group);

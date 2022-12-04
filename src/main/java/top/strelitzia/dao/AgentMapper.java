@@ -1,6 +1,7 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.AgentInfo;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
  * @author strelitzia
  * @Date 2020/12/7 13:50
  **/
+@Repository
 public interface AgentMapper {
 
     //根据稀有度查询干员列表

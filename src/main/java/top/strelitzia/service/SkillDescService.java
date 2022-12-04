@@ -31,7 +31,7 @@ public class SkillDescService {
     @Autowired
     private NickNameMapper nickNameMapper;
 
-    @AngelinaGroup(keyWords = {"技能详情", "技能描述", "技能"}, description = "查询技能详情")
+    @AngelinaGroup(keyWords = {"技能详情", "技能描述", "技能"}, description = "查询技能详情", sort = "查询功能",funcClass = "干员信息查询")
     public ReplayInfo getSkillDescByInfo(MessageInfo messageInfo) throws IOException {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {

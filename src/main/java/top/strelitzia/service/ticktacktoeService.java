@@ -1,6 +1,5 @@
 package top.strelitzia.service;
 
-import net.mamoe.mirai.message.data.Dice;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
@@ -41,7 +40,7 @@ public class TicktacktoeService {
         }
     };
 
-    @AngelinaGroup(keyWords = {"井字棋"},description = "井字棋游戏")
+    @AngelinaGroup(keyWords = {"井字棋"},description = "井字棋游戏", sort = "娱乐功能")
     public ReplayInfo ticktacktoeBegin(MessageInfo messageInfo){
         ReplayInfo replayInfo =new ReplayInfo(messageInfo);
         if (groupList.contains(messageInfo.getGroupId())) {
@@ -114,7 +113,7 @@ public class TicktacktoeService {
                 //发送扔骰子时确定先后顺序
                 if (first == 0) {
                     first = new Random().nextInt(6) + 1;
-                    replayInfo.setDice(new Dice(first));
+                    replayInfo.setDice(first);
                     offensive = recallOfSelect.getQq();
                     offensiveName = recallOfSelect.getName();
                     replayInfo.setReplayMessage( recallOfSelect.getName()+"的点数是"+first +
@@ -123,7 +122,7 @@ public class TicktacktoeService {
                     if (offensive.equals(recallOfSelect.getQq())) replayInfo.setReplayMessage("您已经丢过骰子了呢");
                     else {
                         second = new Random().nextInt(6) + 1;
-                        replayInfo.setDice(new Dice(second));
+                        replayInfo.setDice(second);
                         if (first > second) {
                             defensive = recallOfSelect.getQq();
                             defensiveName = recallOfSelect.getName();

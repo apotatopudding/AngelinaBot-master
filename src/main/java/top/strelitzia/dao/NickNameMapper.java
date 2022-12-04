@@ -1,6 +1,7 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.NickName;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * @Package com.strelizia.arknights.dao
  * @Date 2021/4/20 17:34
  **/
+@Repository
 public interface NickNameMapper {
     String selectNameByNickName(String name);
 

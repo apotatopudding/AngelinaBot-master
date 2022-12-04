@@ -1,9 +1,11 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface BirthdayRemindMapper {
 
     //增加指定的群组订阅的干员生日提醒

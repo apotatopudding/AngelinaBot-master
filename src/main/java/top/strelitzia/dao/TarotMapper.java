@@ -1,8 +1,10 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.TarotInfo;
 
+@Repository
 public interface TarotMapper {
 
     //更新塔罗牌抽取次数到数据库中

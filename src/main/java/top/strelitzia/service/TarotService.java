@@ -22,8 +22,6 @@ public class TarotService {
     @Autowired
     private TarotMapper tarotMapper;
 
-//    private String oriFileOfFileName;
-
     @AngelinaFriend(keyWords = {"请远山小姐为我占卜吧"}, description = "远山小姐的神奇占卜术，很灵的哦")
     public ReplayInfo FriendTakeTarot(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);

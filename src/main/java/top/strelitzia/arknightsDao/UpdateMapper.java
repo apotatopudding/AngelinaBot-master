@@ -1,14 +1,14 @@
 package top.strelitzia.arknightsDao;
 
-
-import io.swagger.models.auth.In;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.*;
 
 /**
  * @author strelitzia
  * @Date 2020/12/19 18:42
  **/
+@Repository
 public interface UpdateMapper {
 
     //插入一个干员信息

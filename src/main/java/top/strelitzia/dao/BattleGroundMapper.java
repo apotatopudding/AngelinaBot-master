@@ -1,6 +1,7 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.BattleGroundInfo;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
  * @author wangzy
  * @Date 2020/12/26 0:38
  **/
+@Repository
 public interface BattleGroundMapper {
 
     //创建新的成员行信息

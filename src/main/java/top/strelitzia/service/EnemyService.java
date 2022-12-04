@@ -22,7 +22,7 @@ public class EnemyService {
     @Autowired
     private EnemyMapper enemyMapper;
 
-    @AngelinaGroup(keyWords = {"敌人查询", "查询敌人", "敌人面板"}, description = "查询敌人面板")
+    @AngelinaGroup(keyWords = {"敌人查询", "查询敌人", "敌人面板"}, description = "查询敌人面板", sort = "查询功能", funcClass = "敌方查询")
     public ReplayInfo getEnemyInfoByName(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {
@@ -47,7 +47,7 @@ public class EnemyService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"敌人名字", "敌人全名"}, description = "查询敌人的全名")
+    @AngelinaGroup(keyWords = {"敌人名字", "敌人全名"}, description = "查询敌人的全名", sort = "查询功能",funcClass = "敌方查询")
     public ReplayInfo getEnemyListByName(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {

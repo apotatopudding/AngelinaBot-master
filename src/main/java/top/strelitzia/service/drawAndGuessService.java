@@ -43,11 +43,15 @@ public class drawAndGuessService {
                                 message.getQq().equals(messageInfo.getQq()) &&
                                 message.getImgUrlList() != null;
                     }else {
-                        String s = message.getArgs().get(0);
-                        if (message.getArgs().size() < 1) s = "任意不为答案字符";
-                        return message.getGroupId().equals(messageInfo.getGroupId()) &&
-                                message.getQq().equals(messageInfo.getQq()) &&
-                                (message.getArgs().get(1) != null && s.equals("答案"));
+                        boolean reply ;
+                        try{
+                            reply = message.getGroupId().equals(messageInfo.getGroupId()) &&
+                                    message.getQq().equals(messageInfo.getQq()) &&
+                                    (message.getArgs().get(1) != null && message.getArgs().get(0).equals("答案"));
+                        }catch (NullPointerException e){
+                            reply = false;
+                        }
+                        return reply;
                     }
                 }
             };
@@ -84,10 +88,14 @@ public class drawAndGuessService {
             AngelinaListener angelinaListener = new AngelinaListener() {
                 @Override
                 public boolean callback(MessageInfo message) {
-                    String s = message.getArgs().get(0);
-                    if(message.getArgs().size()<2) s = "任意不为我猜字符";
-                    return message.getGroupId().equals(messageInfo.getGroupId())&&
-                            s.equals("我猜");
+                    boolean reply;
+                    try{
+                       reply = message.getGroupId().equals(messageInfo.getGroupId())&&
+                               message.getArgs().get(0).equals("我猜");
+                    }catch (NullPointerException e){
+                        reply = false;
+                    }
+                    return reply;
                 }
             };
             angelinaListener.setGroupId(messageInfo.getGroupId());

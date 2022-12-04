@@ -9,7 +9,7 @@ import top.angelinaBot.model.ReplayInfo;
 public class BeastService {
     private final char[] bd = {'~', '？', '！', '喵'};
 
-    @AngelinaGroup(keyWords = {"兽语加密"}, description = "输入字符加密成兽语")
+    @AngelinaGroup(keyWords = {"兽语加密"}, description = "输入字符加密成兽语", sort = "娱乐功能", funcClass = "兽语")
     public ReplayInfo ToBeast(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {
@@ -20,14 +20,14 @@ public class BeastService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"兽语解密"}, description = "输入兽语解密成字符")
+    @AngelinaGroup(keyWords = {"兽语解密"}, description = "输入兽语解密成字符", sort = "娱乐功能", funcClass = "兽语")
     public ReplayInfo FromBeast(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {
             String str = messageInfo.getArgs().get(1);
             str = str.substring(3, str.length() - 1);
             String string = FromHex(BeastToHex(str));
-            replayInfo.setReplayMessage("”"+string+"“");
+            replayInfo.setReplayMessage("“"+string+"”");
         } else {
             replayInfo.setReplayMessage("请输入需要解密的内容");
         }

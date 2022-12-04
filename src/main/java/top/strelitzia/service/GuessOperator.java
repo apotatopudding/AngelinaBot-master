@@ -15,7 +15,6 @@ import top.strelitzia.arknightsDao.SkillDescMapper;
 import top.strelitzia.dao.AdminUserMapper;
 import top.strelitzia.dao.NickNameMapper;
 import top.strelitzia.model.OperatorBasicInfo;
-import top.strelitzia.util.AdminUtil;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -43,10 +42,10 @@ public class GuessOperator {
 
     private static final Set<Long> groupList = new HashSet<>();
 
-    @AngelinaGroup(keyWords = {"猜干员"},description = "干员竞猜活动")
+    @AngelinaGroup(keyWords = {"猜干员"},description = "干员竞猜活动", sort = "娱乐功能",funcClass = "猜干员")
     public ReplayInfo guessOperator(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
+        //boolean sqlAdmin = AdminUtil.getAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
         if (groupList.contains(messageInfo.getGroupId())) {
             replayInfo.setReplayMessage("本群正在进行猜干员，请查看消息记录");
         }else {
@@ -107,6 +106,7 @@ public class GuessOperator {
                         }
                     };
                     angelinaListener.setGroupId(messageInfo.getGroupId());
+                    angelinaListener.setFunctionId("guessOperator");
                     MessageInfo recall = AngelinaEventSource.waiter(angelinaListener).getMessageInfo();
                     if (recall == null) {
                         groupList.remove(messageInfo.getGroupId());
@@ -184,8 +184,17 @@ public class GuessOperator {
     @AngelinaGroup(keyWords = {"重启猜干员"})
     public ReplayInfo reGuessOperator(MessageInfo messageInfo) {
         groupList.remove(messageInfo.getGroupId());
-        AngelinaEventSource.getInstance().listenerSet.keySet().removeIf(l -> l.getGroupId().equals(messageInfo.getGroupId()));
+        AngelinaEventSource.remove(messageInfo.getGroupId());
         return guessOperator(messageInfo);
+    }
+
+    @AngelinaGroup(keyWords = {"结束猜干员", "终止猜干员", "中止猜干员"}, sort = "娱乐功能",funcClass = "猜干员")
+    public ReplayInfo stopGuessOperator(MessageInfo messageInfo) {
+        groupList.remove(messageInfo.getGroupId());
+        AngelinaEventSource.remove(messageInfo.getGroupId());
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        replayInfo.setReplayMessage("本群猜干员已结束");
+        return replayInfo;
     }
 
     /**

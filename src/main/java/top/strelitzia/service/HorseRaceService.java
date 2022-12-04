@@ -13,7 +13,6 @@ import top.angelinaBot.util.SendMessageUtil;
 import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.model.HorseRaceInfo;
 
-import java.security.SecureRandom;
 import java.util.*;
 
 @Slf4j
@@ -42,7 +41,7 @@ public class HorseRaceService {
         }
     };
 
-    @AngelinaGroup(keyWords = {"赛马娘"},description = "观看紧张刺激的赛马娘比赛")
+    @AngelinaGroup(keyWords = {"赛马娘"},description = "观看紧张刺激的赛马娘比赛", sort = "娱乐功能")
     public ReplayInfo signUp(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (groupList.contains(messageInfo.getGroupId())){
@@ -97,7 +96,7 @@ public class HorseRaceService {
                     try {
                         replay = message.getGroupId().equals(messageInfo.getGroupId())&&
                                 message.getArgs().get(0).equals("下注");
-                    }catch (NullPointerException e){
+                    }catch (NullPointerException | IndexOutOfBoundsException e){
                         replay = false;
                     }
                     return replay;
@@ -140,7 +139,7 @@ public class HorseRaceService {
                                 Num = contestant.getKey();
                             }
                         }
-                    }else {
+                    }else if(recall.getArgs().get(1).matches(".*[0-9].*")){
                         //没有则查找有没有包含数字，有则提取
                         StringBuilder s = new StringBuilder();
                         char[] arr=recall.getArgs().get(1).toCharArray();
@@ -150,6 +149,11 @@ public class HorseRaceService {
                             }
                         }
                         Num = Integer.parseInt(s.toString());
+                    }else {
+                        replayInfo.setReplayMessage("抱歉博士，没有理解您要下注的对象呢，检查一下吧");
+                        sendMessageUtil.sendGroupMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
+                        continue;
                     }
                 }else {
                     //是数字，直接转换为编号，查找表是否有该选手
@@ -182,7 +186,7 @@ public class HorseRaceService {
                         }
                     }
                     if (s.toString().equals("")){
-                        replayInfo.setReplayMessage("对不起啊博士，积分需要是数字呢");
+                        replayInfo.setReplayMessage("抱歉博士，积分需要是数字呢");
                         sendMessageUtil.sendGroupMsg(replayInfo);
                         replayInfo.setReplayMessage(null);
                         continue;

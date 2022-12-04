@@ -17,6 +17,7 @@ import top.strelitzia.model.MaterialInfo;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class EquipService {
     @Autowired
     private NickNameMapper nickNameMapper;
 
-    @AngelinaGroup(keyWords = {"模组查询", "查询模组", "模组"}, description = "查询模组信息")
+    @AngelinaGroup(keyWords = {"模组查询", "查询模组", "模组"}, description = "查询模组信息", sort = "查询功能")
     public ReplayInfo getOperatorEquip(MessageInfo messageInfo) throws IOException {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {
@@ -47,79 +48,84 @@ public class EquipService {
 
             List<EquipInfo> equipInfos = equipMapper.selectEquipByName(name);
             if (equipInfos.size() > 0) {
-                TextLine textLine = new TextLine(100);
+                List<String> equipList = new ArrayList<>();
+                TextLine textLine = new TextLine(30);
                 String pathname1 = operatorInfoMapper.selectAvatarByName(name);
                 if (pathname1 != null) {
                     textLine.addImage(ImageIO.read(new File(pathname1)));
                 }
                 textLine.addString(name + "的模组信息为：");
-
                 textLine.nextLine();
                 for (EquipInfo equipInfo: equipInfos) {
                     String equipId = equipInfo.getEquipId();
-                    List<String> strings = equipMapper.selectEquipMissionById(equipId);
-                    textLine.nextLine();
-                    textLine.addString("模组名称：" + equipInfo.getEquipName());
-                    textLine.nextLine();
-                    textLine.addString("解锁条件：");
-                    textLine.nextLine();
-
-                    int j = 1;
-                    for (String mission : strings) {
-                        textLine.addString(j + ". " + mission);
+                    if (!equipList.contains(equipId)) {
+                        List<String> strings = equipMapper.selectEquipMissionById(equipId);
                         textLine.nextLine();
-                        j++;
+                        textLine.addString("模组名称：" + equipInfo.getEquipName());
+                        textLine.nextLine();
+                        textLine.addString("解锁条件：");
+                        textLine.nextLine();
+
+                        int j = 1;
+                        for (String mission : strings) {
+                            textLine.addString(j + ". " + mission);
+                            textLine.nextLine();
+                            j++;
+                        }
+                        textLine.addString("解锁等级： 精英化" + equipInfo.getPhase() +"，"+ equipInfo.getLevel() + "级");
+                        textLine.nextLine();
+                        equipList.add(equipId);
                     }
 
-                    for (int i = 1; i < 4; i++) {
-                        List<EquipBuff> equipBuffs = equipMapper.selectEquipBuffById(equipId, i);
-                        textLine.nextLine();
-                        textLine.addString("等级" + i + ":");
-                        textLine.nextLine();
-                        String[] desc = equipInfo.getDesc().split("\\|\\|\\|");
-                        textLine.addString("模组特性：");
-                        textLine.nextLine();
+                    int i = equipInfo.getEquipLevel();
+                    List<EquipBuff> equipBuffs = equipMapper.selectEquipBuffById(equipId, i);
+                    textLine.nextLine();
+                    textLine.addString("等级" + i + ":");
+                    textLine.nextLine();
+                    String[] desc = equipInfo.getDesc().split("\\|\\|\\|");
+                    textLine.addString("模组特性：");
+                    textLine.nextLine();
+                    textLine.addSpace(2);
+                    textLine.addString("新增天赋：");
+                    textLine.nextLine();
+                    textLine.addSpace(4);
+                    textLine.addString(desc[0]);
+                    textLine.nextLine();
+                    textLine.addSpace(2);
+                    textLine.addString("天赋变化：");
+                    textLine.nextLine();
+                    textLine.addSpace(4);
+                    textLine.addString(desc[1]);
+                    textLine.nextLine();
+
+                    textLine.addString("面板变化：");
+                    textLine.nextLine();
+                    for (EquipBuff e : equipBuffs) {
+                        String value;
+                        if (e.getValue() >= 0) {
+                            value = "+" + e.getValue();
+                        } else {
+                            value = "-" + e.getValue();
+                        }
                         textLine.addSpace(2);
-                        textLine.addString("新增天赋：");
+                        textLine.addString(returnBuffName(e.getBuffName()));
+                        textLine.addSpace();
+                        textLine.addString(value);
                         textLine.nextLine();
-                        textLine.addSpace(4);
-                        textLine.addString(desc[0]);
-                        textLine.addString("天赋变化：");
-                        textLine.nextLine();
-                        textLine.addSpace(4);
-                        textLine.addString(desc[1]);
-                        textLine.nextLine();
-                        textLine.addString("解锁等级： 精英化" + equipInfo.getPhase() + equipInfo.getLevel() + "级");
-                        textLine.nextLine();
-
-                        textLine.addString("面板变化：");
-                        textLine.nextLine();
-                        for (EquipBuff e : equipBuffs) {
-                            String value;
-                            if (e.getValue() >= 0) {
-                                value = "+" + e.getValue();
-                            } else {
-                                value = "-" + e.getValue();
-                            }
-                            textLine.addSpace(2);
-                            textLine.addString(returnBuffName(e.getBuffName()));
-                            textLine.addSpace();
-                            textLine.addString(value);
-                            textLine.nextLine();
-                        }
-                        textLine.addString("解锁材料：");
-                        textLine.nextLine();
-
-                        List<MaterialInfo> materialInfos = equipMapper.selectEquipCostById(equipId, i);
-                        for (MaterialInfo m : materialInfos) {
-                            String pathname = materialMadeMapper.selectMaterialPicByName(m.getMaterialName());
-                            if (pathname != null) {
-                                textLine.addImage(ImageIO.read(new File(pathname)));
-                            }
-                            textLine.addString(m.getMaterialName() + " * " + m.getMaterialNum() + "个");
-                            textLine.nextLine();
-                        }
                     }
+                    textLine.addString("解锁材料：");
+                    textLine.nextLine();
+
+                    List<MaterialInfo> materialInfos = equipMapper.selectEquipCostById(equipId, i);
+                    for (MaterialInfo m : materialInfos) {
+                        String pathname = materialMadeMapper.selectMaterialPicByName(m.getMaterialName());
+                        if (pathname != null) {
+                            textLine.addImage(ImageIO.read(new File(pathname)));
+                        }
+                        textLine.addString(m.getMaterialName() + " * " + m.getMaterialNum() + "个");
+                        textLine.nextLine();
+                    }
+
                 }
 
                 replayInfo.setReplayImg(textLine.drawImage());

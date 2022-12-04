@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
-import top.angelinaBot.util.MiraiFrameUtil;
+import top.angelinaBot.util.AdminUtil;
 import top.angelinaBot.util.SendMessageUtil;
 import top.strelitzia.dao.AdminUserMapper;
 import top.strelitzia.dao.BiliMapper;
@@ -21,7 +21,6 @@ import top.strelitzia.dao.GroupAdminInfoMapper;
 import top.strelitzia.dao.UserFoundMapper;
 import top.strelitzia.model.BiliCount;
 import top.strelitzia.model.DynamicDetail;
-import top.strelitzia.util.AdminUtil;
 
 import java.util.List;
 import java.util.Random;
@@ -52,25 +51,24 @@ public class BiliListeningService {
     @Autowired
     private AdminUserMapper adminUserMapper;
 
-    public boolean getDynamicList() {
-        List<BiliCount> biliCountList = biliMapper.getBiliCountList();
-        boolean b = false;
-        for (BiliCount bili : biliCountList) {
-            try {
+    private boolean doingBiliUpdate = false;
+
+    public void getDynamicList() {
+        if (!doingBiliUpdate) {
+            doingBiliUpdate = true;
+            List<BiliCount> biliCountList = biliMapper.getBiliCountList();
+            for (BiliCount bili : biliCountList) {
                 String biliSpace = "https://space.bilibili.com/" + bili.getUid() + "/dynamic";
                 String dynamicList = "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?host_uid=";
                 String dynamicListUrl = "&offset_dynamic_id=0&need_top=";
-                String topDynamic = restTemplate
-                        .exchange(dynamicList + bili.getUid() + dynamicListUrl + 1, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), String.class).getBody();//1 -> 抓取置顶动态
+                String topDynamic = getStringByUrl(dynamicList + bili.getUid() + dynamicListUrl + 1);//1 -> 抓取置顶动态
                 //解析动态列表json
                 Long top = new JSONObject(topDynamic).getJSONObject("data").getJSONArray("cards").getJSONObject(0).getJSONObject("desc").getLong("dynamic_id");
                 bili.setTop(top);
                 //循环遍历每个被监听的账号
                 String result;
                 String url = dynamicList + bili.getUid() + dynamicListUrl + 0;//0 -> 不抓取置顶动态
-                HttpEntity<String> httpEntity = new HttpEntity<>(new HttpHeaders());
-                String s = restTemplate
-                        .exchange(url, HttpMethod.GET, httpEntity, String.class).getBody();
+                String s = getStringByUrl(url);
                 JSONObject dynamicJson = new JSONObject(s);
                 //解析动态列表json
                 JSONArray dynamics = dynamicJson.getJSONObject("data").getJSONArray("cards");
@@ -90,29 +88,28 @@ public class BiliListeningService {
                                 newDetail.getTitle() + "\n" +
                                 newDetail.getText() + "\n" + biliSpace;
                         log.info("{}有新动态", name);
-                        b = true;
                         List<Long> groups = userFoundMapper.selectCakeGroups(bili.getUid());
                         String pic = newDetail.getPicUrl();
                         ReplayInfo replayInfo = new ReplayInfo();
-                        for (Long groupId: groups) {
-                            replayInfo.setReplayMessage(result);
-                            if (pic != null) {
-                                replayInfo.setReplayImg(pic);
-                            }
-                            replayInfo.setGroupId(groupId);
-                            replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(groupId));
-                            sendMessageUtil.sendGroupMsg(replayInfo);
-                            replayInfo.setReplayMessage(null);
-                            replayInfo.getReplayImg().clear();
-                            Thread.sleep(new Random().nextInt(5) * 1000);
+                        replayInfo.setReplayMessage(result);
+                        if (pic != null) {
+                            replayInfo.setReplayImg(pic);
                         }
+
+                        replayInfo.setGroupId(groups);
+                        sendMessageUtil.sendGroupMsg(replayInfo);
                     }
                 }
-            }catch(Exception e){
-                log.error(e.getMessage());
+                try {
+                    Thread.sleep(new Random().nextInt(5) * 1000);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                }
             }
+            doingBiliUpdate = false;
+        } else {
+            log.warn("无法重读读取B站更新");
         }
-        return b;
     }
 
     public DynamicDetail getDynamicDetail(Long DynamicId) {
@@ -120,8 +117,7 @@ public class BiliListeningService {
         //获取动态的Json消息
         HttpEntity<String> httpEntity = new HttpEntity<>(new HttpHeaders());
         String dynamicDetailUrl = "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/get_dynamic_detail?dynamic_id=";
-        String s = restTemplate
-                .exchange(dynamicDetailUrl + DynamicId, HttpMethod.GET, httpEntity, String.class).getBody();
+        String s = getStringByUrl(dynamicDetailUrl + DynamicId);
         JSONObject detailJson = new JSONObject(s);
         int type = detailJson.getJSONObject("data").getJSONObject("card").getJSONObject("desc").getInt("type");
         String cardStr = detailJson.getJSONObject("data").getJSONObject("card").getString("card");
@@ -178,8 +174,7 @@ public class BiliListeningService {
             BiliCount bili = biliMapper.getOneDynamicByName(messageInfo.getArgs().get(1));
             String videoUrl = "&pn=1&ps=1&jsonp=jsonp";
             String videoHead = "https://api.bilibili.com/x/space/arc/search?mid=";
-            String newBvstr = restTemplate
-                    .exchange(videoHead + bili.getUid() + videoUrl, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), String.class).getBody();
+            String newBvstr = getStringByUrl(videoHead + bili.getUid() + videoUrl);
             JSONObject newBvJson = new JSONObject(newBvstr);
             String newBv = newBvJson.getJSONObject("data").getJSONObject("list").getJSONArray("vlist").getJSONObject(0).getString("bvid");
             replayInfo.setReplayMessage("https://www.bilibili.com/video/" + newBv);
@@ -232,8 +227,8 @@ public class BiliListeningService {
 
         if (messageInfo.getArgs().size() > 1) {
             String biliId = messageInfo.getArgs().get(1);
-            boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
-            if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !sqlAdmin) {
+            boolean Admin = AdminUtil.getAdmin(messageInfo.getQq());
+            if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !Admin) {
                 replayInfo.setReplayMessage("您不是本群管理员，无权进行本群的关注操作");
             } else {
                 Integer integer = groupAdminInfoMapper.existGroupId(groupId);
@@ -270,8 +265,8 @@ public class BiliListeningService {
 
         if (messageInfo.getArgs().size() > 1) {
             String biliId = messageInfo.getArgs().get(1);
-            boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
-            if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !sqlAdmin) {
+            boolean Admin = AdminUtil.getAdmin(messageInfo.getQq());
+            if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !Admin) {
                 replayInfo.setReplayMessage("您不是本群管理员，无权进行本群的关注操作");
             } else {
                 Long uid = Long.parseLong(biliId);
@@ -282,5 +277,13 @@ public class BiliListeningService {
             replayInfo.setReplayMessage("请输入需要取关的Uid");
         }
         return replayInfo;
+    }
+
+    public String getStringByUrl(String url) {
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36");
+        httpHeaders.set("cookie", "l=v; buvid3=626FC5CF-837D-619F-4E55-6D12087A5E2571622infoc; b_nut=1665411071; i-wanna-go-back=-1; _uuid=67AB95B2-FFE10-8368-2CB3-BBBE3453ADA386498infoc; buvid4=5D4DE9D7-8C19-5C42-44A2-D7A09963753472506-022101022-F5qpizBMaJqaij7UugK2Sw%3D%3D; buvid_fp_plain=undefined; DedeUserID=13794497; DedeUserID__ckMd5=a071de84de9f9543; nostalgia_conf=-1; b_ut=5; rpdid=|(u~km)k)m)u0J'uYYlRukR~m; CURRENT_BLACKGAP=0; fingerprint=20b5d1fa93b9198e6574ae1e9e4e22df; buvid_fp=15e1071d0aa0e44bc130d02de0a39be2; bp_video_offset_13794497=719507932525363300; PVID=5; CURRENT_FNVAL=16; innersign=0; b_lsid=FF10D64AB_183FDB6F736; SESSDATA=911a5f0f%2C1681960954%2C16491%2Aa2; bili_jct=a0860bd71d60e1912759fe8f88f2c7f5; sid=pcia4v68");
+        return restTemplate
+                .exchange(url, HttpMethod.GET, new HttpEntity<>(httpHeaders), String.class).getBody();
     }
 }

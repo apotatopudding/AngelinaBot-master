@@ -1,7 +1,6 @@
 package top.strelitzia.service;
 
 import lombok.extern.slf4j.Slf4j;
-import net.mamoe.mirai.contact.MemberPermission;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
@@ -10,13 +9,13 @@ import top.angelinaBot.container.AngelinaListener;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.model.TextLine;
+import top.angelinaBot.util.AdminUtil;
 import top.angelinaBot.util.SendMessageUtil;
+import top.strelitzia.arknightsDao.OperatorInfoMapper;
 import top.strelitzia.dao.AdminUserMapper;
 import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.dao.NickNameMapper;
-import top.strelitzia.arknightsDao.OperatorInfoMapper;
 import top.strelitzia.model.OperatorBasicInfo;
-import top.strelitzia.util.AdminUtil;
 
 import java.util.*;
 
@@ -41,7 +40,7 @@ public class OperatorGuessService {
 
     private static final Set<Long> groupList = new HashSet<>();
 
-    @AngelinaGroup(keyWords = {"的小小茶话会"}, description = "茶话会干员竞猜,默认十位（要出多的题可以在后面追加 □ （数字）")
+    @AngelinaGroup(keyWords = {"的小小茶话会"}, description = "茶话会干员竞猜,默认十位（要出多的题可以在后面追加 □ （数字）", sort = "娱乐功能",funcClass = "茶话会")
     public ReplayInfo beginTopic(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         int topicNum = 10 ;
@@ -248,15 +247,15 @@ public class OperatorGuessService {
         }
     }
 
-    @AngelinaGroup(keyWords = {"退出茶话会"}, description = "茶话会关闭")
+    @AngelinaGroup(keyWords = {"退出茶话会"}, description = "茶话会关闭", sort = "娱乐功能",funcClass = "茶话会")
     public ReplayInfo closeTopic(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
-        if (messageInfo.getUserAdmin().getLevel()<1 && !sqlAdmin){
+        boolean admin = AdminUtil.getAdmin(messageInfo.getQq());
+        if (messageInfo.getUserAdmin().getLevel()<1 && !admin){
             replayInfo.setReplayMessage("（琴柳似乎沉浸在和桑葚的聊天中，并没有注意到你）");
         }else {
             groupList.remove(messageInfo.getGroupId());
-            AngelinaEventSource.getInstance().listenerSet.keySet().removeIf(angelinaListener -> angelinaListener.getGroupId().equals(messageInfo.getGroupId()));
+            AngelinaEventSource.remove(messageInfo.getGroupId());
             replayInfo.setReplayMessage("博士您要走了吗，那请帮忙把这包甜司康饼带给小刻吧，下次有空记得还来玩啊");
         }
         return replayInfo;

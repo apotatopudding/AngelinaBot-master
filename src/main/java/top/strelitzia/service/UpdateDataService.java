@@ -1,33 +1,36 @@
 package top.strelitzia.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import top.angelinaBot.annotation.AngelinaFriend;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
+import top.angelinaBot.util.AdminUtil;
 import top.strelitzia.arknightsDao.*;
 import top.strelitzia.dao.AdminUserMapper;
-import top.strelitzia.dao.UserFoundMapper;
 import top.strelitzia.model.*;
-import top.strelitzia.util.AdminUtil;
 import top.strelitzia.util.FormatStringUtil;
-import top.strelitzia.util.XPathUtil;
 
 import java.io.*;
-import java.net.*;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,9 +42,6 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 public class UpdateDataService {
-
-    @Autowired
-    private UserFoundMapper userFoundMapper;
 
     @Autowired
     private UpdateMapper updateMapper;
@@ -80,67 +80,84 @@ public class UpdateDataService {
 //    private String url = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/";
 //    private String url = "http://vivien8261.gitee.io/arknights-bot-resource/gamedata/";
     private final String url = "https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/master/";
+//    private final String url = "https://raw.githubusercontent.com/yuanyan3060/Arknights-Bot-Resource/main/";
 
     /** 先判断版本是否相同→如果版本不同，开始更新→置位1→下载数据文件→置位0→下载完成→置位2→写入数据→置位0→写入完成 */
     private static int updateStatus = 0;
 
-    @AngelinaGroup(keyWords = {"更新"}, description = "尝试更新数据")
+    @AngelinaGroup(keyWords = {"更新"}, description = "尝试更新数据", sort = "权限功能")
     @AngelinaFriend(keyWords = {"更新"}, description = "尝试更新数据")
     public ReplayInfo downloadDataFile(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        if (!AdminUtil.getSqlAdmin(messageInfo.getQq(), admins)) {
+        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
             replayInfo.setReplayMessage("您无更新权限");
         } else {
-            DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
-            if(messageInfo.getArgs().size()>2){
-                downloadInfo.setHostname(messageInfo.getArgs().get(1));
-                downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
-                downloadInfo.setUseHost(true);
-            }else {
-                downloadInfo.setUseHost(false);
+            if (updateStatus == 0) {
+                DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
+
+                if (messageInfo.getArgs().size() > 2) {
+                    downloadInfo.setHostname(messageInfo.getArgs().get(1));
+                    downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
+                    downloadInfo.setUseHost(true);
+                } else {
+                    downloadInfo.setUseHost(false);
+                }
+                downloadInfo.setForce(false);
+                boolean finish = downloadDataFile(downloadInfo);
+                if (finish) {
+                    replayInfo.setReplayMessage("更新完成");
+                } else {
+                    replayInfo.setReplayMessage("更新失败，请从后台日志查看更新情况");
+                }
+            } else if (updateStatus == 1) {
+                replayInfo.setReplayMessage("正在下载数据文件中，请稍后再试");
+            } else {
+                replayInfo.setReplayMessage("正在写入数据库中，请稍后再试");
             }
-            downloadInfo.setForce(false);
-            downloadDataFile(downloadInfo);
-            replayInfo.setReplayMessage("更新结束，请从后台日志查看更新情况");
         }
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"全量更新"}, description = "强制全量更新数据")
+    @AngelinaGroup(keyWords = {"全量更新"}, description = "强制全量更新数据", sort = "权限功能")
     @AngelinaFriend(keyWords = {"全量更新"}, description = "强制全量更新数据")
     public ReplayInfo downloadDataFileForce(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        if (!AdminUtil.getSqlAdmin(messageInfo.getQq(), admins)) {
+        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
             replayInfo.setReplayMessage("您无更新权限");
         } else {
-            DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
-            rebuildDatabase();
-            if(messageInfo.getArgs().size()>2){
-                downloadInfo.setHostname(messageInfo.getArgs().get(1));
-                downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
-                downloadInfo.setUseHost(true);
-            }else {
-                downloadInfo.setUseHost(false);
+            if (updateStatus == 0) {
+                DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
+                rebuildDatabase();
+                if (messageInfo.getArgs().size() > 2) {
+                    downloadInfo.setHostname(messageInfo.getArgs().get(1));
+                    downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
+                    downloadInfo.setUseHost(true);
+                } else {
+                    downloadInfo.setUseHost(false);
+                }
+                downloadInfo.setForce(true);
+                boolean finish = downloadDataFile(downloadInfo);
+                if (finish) {
+                    replayInfo.setReplayMessage("更新完成");
+                } else {
+                    replayInfo.setReplayMessage("更新失败，请从后台日志查看更新情况");
+                }
+            } else if (updateStatus == 1) {
+                replayInfo.setReplayMessage("正在下载数据文件中，请重启Bot后再试");
+            } else {
+                replayInfo.setReplayMessage("正在写入数据库中，请重启Bot后再试");
             }
-            downloadInfo.setForce(true);
-            boolean finish = downloadDataFile(downloadInfo);
-            if(finish) replayInfo.setReplayMessage("更新完成");
-            else replayInfo.setReplayMessage("更新失败，请从后台日志查看更新情况");
         }
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"更新素材", "更新图片", "更新图标"}, description = "更新素材数据")
+    @AngelinaGroup(keyWords = {"更新素材", "更新图片", "更新图标"}, description = "更新素材数据", sort = "权限功能")
     @AngelinaFriend(keyWords = {"更新素材", "更新图片", "更新图标"}, description = "更新素材数据")
     public ReplayInfo updateImgFile(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        if (!AdminUtil.getSqlAdmin(messageInfo.getQq(), admins)) {
+        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
             replayInfo.setReplayMessage("您无更新权限");
-        } else {
-
+        }else {
             DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
             rebuildDatabase();
             if(messageInfo.getArgs().size()>2){
@@ -159,9 +176,36 @@ public class UpdateDataService {
         return replayInfo;
     }
 
+    @AngelinaGroup(keyWords = {"更新语音"}, description = "更新语音数据", sort = "权限功能")
+    @AngelinaFriend(keyWords = {"更新语音"}, description = "更新语音数据")
+    public ReplayInfo updateVoiceFile(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
+            replayInfo.setReplayMessage("您无更新权限");
+        }else {
+            DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
+            if(messageInfo.getArgs().size()>2){
+                downloadInfo.setHostname(messageInfo.getArgs().get(1));
+                downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
+                downloadInfo.setUseHost(true);
+            }else {
+                downloadInfo.setUseHost(false);
+            }
+            updateOperatorVoice(downloadInfo);
+            replayInfo.setReplayMessage("更新语音完成");
+        }
+        return replayInfo;
+    }
+
     public boolean downloadDataFile(DownloadOneFileInfo downloadInfo) {
-        String koKoDaYoKeyUrl = url + "gamedata/excel/data_version.txt";
-        String charKey = getJsonStringFromUrl(koKoDaYoKeyUrl);
+        downloadInfo.setUrl( url + "gamedata/excel/data_version.txt" );
+        String charKey;
+        try {
+            charKey = getJsonStringFromUrl(downloadInfo);
+        }catch (IOException e){
+            log.error(e.toString());
+            return false;
+        }
         //Integer versionStatus = updateMapper.getVersionStatus();
         File dataVersionFile = new File("runFile/download/data_version.txt");
         //确保状态是未正在下载
@@ -170,12 +214,16 @@ public class UpdateDataService {
             //version文件不存在时，进行下载操作
             if (dataVersionFile.exists()) {
                 String dataVersion = getJsonStringFromFile("data_version.txt");
-                //version文件存在且和线上version不相等时，进行下载操作
-                if (dataVersion.replace("\n", "").equals(charKey.replace("\n", ""))) {
-                    log.info("线上版本和当前数据文件相同，无需下载");
-                    canDownload = false;
-                } else {
-                    log.info("线上版本和当前数据文件不同，准备下载");
+                if (dataVersion == null) {
+                    log.info("数据文件不存在，准备下载");
+                }else {
+                    //version文件存在且和线上version不相等时，进行下载操作
+                    if (dataVersion.replace("\n", "").equals(charKey.replace("\n", ""))) {
+                        log.info("线上版本和当前数据文件相同，无需下载");
+                        canDownload = false;
+                    } else {
+                        log.info("线上版本和当前数据文件不同，准备下载");
+                    }
                 }
             } else {
                 log.info("数据文件不存在，准备下载");
@@ -215,8 +263,7 @@ public class UpdateDataService {
                 }
                 try {
                     log.info("开始下载数据文件");
-                    downloadInfo.setSecond(600);
-                    //updateMapper.doingDownloadVersion();
+                    downloadInfo.setSecond(1200);
                     downloadInfo.setFileName("runFile/download/character_table.json");
                     downloadInfo.setUrl( url + "gamedata/excel/character_table.json");
                     downloadOneFile(downloadInfo);
@@ -256,33 +303,23 @@ public class UpdateDataService {
                     downloadInfo.setFileName("runFile/download/data_version.txt");
                     downloadInfo.setUrl( url+ "gamedata/excel/data_version.txt");
                     downloadOneFile(downloadInfo);
-                    downloadInfo.setSecond(300);
+                    downloadInfo.setSecond(600);
                     downloadInfo.setFileName(null);
                     downloadInfo.setUrl(null);
-
-                    //downloadOneFile("runFile/download/character_table.json", url + "gamedata/excel/character_table.json",600);
-                    //downloadOneFile("runFile/download/gacha_table.json", url + "gamedata/excel/gacha_table.json",600);
-                    //downloadOneFile("runFile/download/skill_table.json", url + "gamedata/excel/skill_table.json",600);
-                    //downloadOneFile("runFile/download/building_data.json", url + "gamedata/excel/building_data.json",600);
-                    //downloadOneFile("runFile/download/handbook_info_table.json", url + "gamedata/excel/handbook_info_table.json",600);
-                    //downloadOneFile("runFile/download/charword_table.json", url + "gamedata/excel/charword_table.json",600);
-                    //downloadOneFile("runFile/download/char_patch_table.json", url + "gamedata/excel/char_patch_table.json",600);
-                    //downloadOneFile("runFile/download/item_table.json", url + "gamedata/excel/item_table.json",600);
-                    //downloadOneFile("runFile/download/skin_table.json", url + "gamedata/excel/skin_table.json",600);
-                    //downloadOneFile("runFile/download/battle_equip_table.json", url + "gamedata/excel/battle_equip_table.json",600);
-                    //downloadOneFile("runFile/download/uniequip_table.json", url + "gamedata/excel/uniequip_table.json",600);
-                    //downloadOneFile("runFile/download/enemy_database.json", url + "gamedata/levels/enemydata/enemy_database.json",600);
-                    //downloadOneFile("runFile/download/data_version.txt", url + "gamedata/excel/data_version.txt",600);
                     log.info("数据文件下载完成");
-                    //updateMapper.doneUpdateVersion();
                     updateStatus = 0;
                 } catch (IOException e) {
                     log.error("下载数据文件失败");
                     log.error(e.toString());
+                    e.printStackTrace();
+                    for (File f : dir.listFiles()) {
+                        f.delete();
+                    }
+                    updateStatus = 0;
+                    return false;
                 }
             }
-            updateAllData(downloadInfo);
-            return true;
+            return updateAllData(downloadInfo);
         } else if (updateStatus == 1) {
             log.warn("数据文件正在下载中，无法重复下载，请等待文件下载完成");
             return false;
@@ -293,15 +330,43 @@ public class UpdateDataService {
     }
 
     private void downloadOneFile(DownloadOneFileInfo downloadInfo) throws IOException {
+        File file = new File(downloadInfo.getFileName());
+        if (file.exists()) {
+            log.info("{}文件已存在，无需下载", downloadInfo.getFileName());
+            return;
+        }
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpResponse response;
+        HttpGet httpGet = new HttpGet(downloadInfo.getUrl());
+        if (downloadInfo.isUseHost()) {
+            //如果要使用代理，加上代理服务器信息
+            HttpHost httpHost = new HttpHost(downloadInfo.getHostname(), downloadInfo.getPort());
+            RequestConfig config = RequestConfig.custom().setProxy(httpHost).build();
+            httpGet.setConfig(config);
+        }
+        response = httpClient.execute(httpGet);
+        //判断响应状态为200，进行处理
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+            HttpEntity httpEntity = response.getEntity();//获取响应文本体
+            try (FileOutputStream fs = new FileOutputStream(downloadInfo.getFileName())) {
+                fs.write(EntityUtils.toByteArray(httpEntity));
+            }
+            log.info("下载{}文件成功", downloadInfo.getFileName());
+        } else {
+            //如果返回状态不是200，比如404（页面不存在）等，根据情况做处理
+            log.error("下载{}文件失败"+response.getStatusLine().getStatusCode(), downloadInfo.getFileName());
+        }
+/*
         URL u = new URL(downloadInfo.getUrl());
         HttpURLConnection httpUrl;
         if (downloadInfo.isUseHost()) {
             Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(downloadInfo.getHostname(), downloadInfo.getPort()));
-             httpUrl = (HttpURLConnection) u.openConnection(proxy);
+            httpUrl = (HttpURLConnection) u.openConnection(proxy);
         }else {
-             httpUrl = (HttpURLConnection) u.openConnection();
+            httpUrl = (HttpURLConnection) u.openConnection();
         }
-        //超时时间
+        //5分钟超时时间
         httpUrl.setConnectTimeout(downloadInfo.getSecond()*1000);
         httpUrl.setReadTimeout(downloadInfo.getSecond()*1000);
 
@@ -316,44 +381,53 @@ public class UpdateDataService {
         } catch (IOException e) {
             log.error("下载{}文件失败", downloadInfo.getFileName());
             log.error(e.toString());
+            throw e;
         }
         httpUrl.disconnect();
+*/
     }
 
-    public void updateAllData(DownloadOneFileInfo downloadOneFileInfo) {
+    public boolean updateAllData(DownloadOneFileInfo downloadOneFileInfo) {
         String charKey = getJsonStringFromFile("data_version.txt");
+        if (charKey == null) return false;
         String dataVersion = updateMapper.getVersion();
         if (dataVersion == null) updateMapper.insertVersion();//如果不存在，手动更新一个0出来避免后续无法更新数据库的版本号
         //Integer versionStatus = updateMapper.getVersionStatus();
-
-        if (updateStatus == 0) {
-            if(!charKey.equals(dataVersion)) { 
-                log.info("数据库和数据文件版本不同，开始更新全部数据");
-                updateStatus = 2;
-                //updateMapper.doingUpdateVersion();
-                //清理干员数据(因部分召唤物无char_id，不方便进行增量更新)
-                log.info("清理干员数据");
-                updateMapper.clearOperatorData();
-                updateAllOperator();
-                updateAllEnemy();
-                updateMapAndItem();
+        try {
+            if (updateStatus == 0) {
+                if (!charKey.equals(dataVersion)) {
+                    log.info("数据库和数据文件版本不同，开始更新全部数据");
+                    updateStatus = 2;
+                    //updateMapper.doingUpdateVersion();
+                    //清理干员数据(因部分召唤物无char_id，不方便进行增量更新)
+                    log.info("清理干员数据");
+                    updateMapper.clearOperatorData();
+                    updateAllOperator();
+                    updateAllEnemy();
+                    updateMapAndItem();
 //                updateSkin(downloadOneFileInfo);
-                updateItemIcon(downloadOneFileInfo);
-                updateOperatorPng(downloadOneFileInfo);
-                updateOperatorSkillPng(downloadOneFileInfo);
+                    updateItemIcon(downloadOneFileInfo);
+                    updateOperatorPng(downloadOneFileInfo);
+                    updateOperatorSkillPng(downloadOneFileInfo);
 //                updateOperatorVoice(downloadOneFileInfo);
-                updateMapper.updateVersion(charKey);
-                updateStatus = 0;
-                //updateMapper.doneUpdateVersion();
-                log.info("游戏数据更新完成--");
+                    updateMapper.updateVersion(charKey);
+                    updateStatus = 0;
+                    //updateMapper.doneUpdateVersion();
+                    log.info("游戏数据更新完成--");
+                } else {
+                    log.info("数据库和数据文件版本相同，无需更新");
+                }
+            } else if (updateStatus == 1) {
+                log.info("数据文件正在下载中，无法重复下载，请等待文件下载完成");
             } else {
-                log.info("数据库和数据文件版本相同，无需更新");
+                log.warn("数据库正在写入数据中，请等待更新完成");
             }
-        } else if (updateStatus == 1) {
-            log.info("数据文件正在下载中，无法重复下载，请等待文件下载完成");
-        } else {
-            log.warn("数据库正在写入数据中，请等待更新完成");
+        } catch (JSONException e) {
+            updateStatus = 0;
+            log.warn("json解析出现错误，请检查json格式与完整性");
+            e.printStackTrace();
         }
+        return true;
     }
 
     /**
@@ -472,7 +546,11 @@ public class UpdateDataService {
                                         }
                                     }
                                 }
-                                operatorBasicInfo.setHeight(Integer.parseInt(str2.toString()));
+                                try {
+                                    operatorBasicInfo.setHeight(Integer.parseInt(str2.toString()));
+                                } catch (NumberFormatException e) {
+                                    log.error("缺少身高数据");
+                                }
                             }
                         }
                     }
@@ -857,7 +935,7 @@ public class UpdateDataService {
                     String fileName = "runFile/skill/skill_icon_" + skill.getSkillIdYj() + ".png";
                     downloadInfo.setSecond(300);
                     downloadInfo.setFileName(fileName);
-                    downloadInfo.setUrl(url + "skill/skill_icon_" + skill.getSkillIdYj() + ".png");
+                    downloadInfo.setUrl(url + "skill/skill_icon_" + URLEncoder.encode(skill.getSkillIdYj(), StandardCharsets.UTF_8) + ".png");
                     downloadOneFile(downloadInfo);
                     downloadInfo.setFileName(null);
                     downloadInfo.setUrl(null);
@@ -875,50 +953,100 @@ public class UpdateDataService {
      */
     public void updateOperatorVoice(DownloadOneFileInfo downloadInfo) {
         log.info("开始更新干员语音");
-        List<OperatorName> allOperatorId = operatorInfoMapper.getAllOperatorIdAndName();
+
+        //中配
+        downloadVoiceByType("voice_cn", downloadInfo);
+        //日配
+        //downloadVoiceByType("voice", downloadInfo);
+        //方言
+        //downloadVoiceByType("voice_custom", downloadInfo);
+        //英语
+        //downloadVoiceByType("voice_en", downloadInfo);
+        //傻逼棒子话
+        //downloadVoiceByType("voice_kr", downloadInfo);
+
+        log.info("更新干员语音完成--");
+    }
+
+    private void downloadVoiceByType(String type, DownloadOneFileInfo downloadInfo) {
+        String area;
+        switch (type){
+            case "voice_cn" -> area = "CN_mandarin";
+            case "voice_custom" -> area = "CN_topolect";
+            case "voice_en" -> area = "EN";
+            case "voice_kr" -> area = "KR";
+            default ->  area = "JP";
+        }
+        List<OperatorName> allOperatorId = operatorInfoMapper.getAllIdAndNameAndCV(area);
+        String url = "https://static.prts.wiki/" + type + "/";
         for (OperatorName name : allOperatorId) {
-            String html = XPathUtil.getHtmlByUrl("https://prts.wiki/w/" + name.getOperatorName() + "/语音记录");
-            Document document = Jsoup.parse(html);
-            Elements as = document.select("a[download]");
-            for (Element a: as){
-                String url = a.attr("href");
-                String[] split = url.split("/");
-                String fileName = XPathUtil.decodeUnicode(split[split.length - 1].substring(0,split[split.length - 1].length() - 4));
-                String path = "runFile/voice/" + name.getCharId() + "/" + fileName + ".wav";
-                try {
-                    downloadInfo.setSecond(300);
-                    downloadInfo.setFileName(path);
-                    downloadInfo.setUrl(url);
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName(null);
-                    downloadInfo.setUrl(null);
-                } catch (IOException e) {
-                    log.error("下载{}语音失败", name.getCharId() + "/" + fileName);
+            String voiceCharId = name.getCharId();
+            if (type.equals("voice_custom")) {
+                voiceCharId = name.getCharId() + "_cn_topolect";
+            }
+            File file = new File("runFile/" + type + "/" + voiceCharId);
+            if (!file.exists()) {
+                file.mkdirs();
+            }
+            for (String voiceName : VoiceService.voiceList) {
+                //判断是否存在该语音
+                if (operatorInfoMapper.selectOperatorVoiceByCharIdAndName(type, name.getCharId(), voiceName) == 0) {
+                    String path = voiceCharId + "/" + name.getOperatorName() + "_" + voiceName + ".wav";
+                    if(name.getOperatorName().equals("近卫阿米娅")){
+                        path = voiceCharId + "/阿米娅_" + voiceName + ".wav";
+                    }
+                    try {
+                        downloadInfo.setSecond(300);
+                        String filePath = "runFile/" + type + "/" + path;
+                        downloadInfo.setFileName(filePath);
+                        downloadInfo.setUrl(url+path);
+                        downloadOneFile(downloadInfo);
+                        downloadInfo.setFileName(null);
+                        downloadInfo.setUrl(null);
+                        //写入数据库
+                        operatorInfoMapper.insertOperatorVoice(name.getCharId(), type, voiceName, filePath);
+                        Thread.sleep(new Random().nextInt(5) * 1000);
+                    } catch (IOException e) {
+                        log.error("下载{}类型{}语音失败", type, name.getCharId() + "/" + voiceName);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
-        log.info("更新干员语音完成--");
     }
 
     /**
      * 发送url的get请求获取结果json字符串
-     * @param url url
+     * @param downloadInfo 相关信息
      * @return 返回结果String
      */
-    public String getJsonStringFromUrl(String url) {
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("User-Agent", "PostmanRuntime/7.26.8");
-        httpHeaders.set("Authorization", "2");
-        httpHeaders.set("Host", "andata.somedata.top");
-        HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
-        String s = null;
-        try {
-            s = restTemplate
-                    .exchange(url, HttpMethod.GET, httpEntity, String.class).getBody();
-        } catch (Exception ignored) {
-
+    public String getJsonStringFromUrl(DownloadOneFileInfo downloadInfo) throws IOException {
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        CloseableHttpResponse response;
+        HttpGet httpGet = new HttpGet(downloadInfo.getUrl());
+        if (downloadInfo.isUseHost()) {
+            //如果要使用代理，加上代理服务器信息
+            HttpHost httpHost = new HttpHost(downloadInfo.getHostname(), downloadInfo.getPort());
+            RequestConfig config = RequestConfig.custom().setProxy(httpHost).build();
+            httpGet.setConfig(config);
         }
-        return s;
+        response = httpclient.execute(httpGet);
+        HttpEntity httpEntity = response.getEntity();//获取响应文本体
+        return EntityUtils.toString(httpEntity, "utf-8");
+        //HttpHeaders httpHeaders = new HttpHeaders();
+        //httpHeaders.set("User-Agent", "PostmanRuntime/7.26.8");
+        //httpHeaders.set("Authorization", "2");
+        //httpHeaders.set("Host", "andata.somedata.top");
+        //HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
+        //String s = null;
+        //try {
+        //    s = restTemplate
+        //            .exchange(url, HttpMethod.GET, httpEntity, String.class).getBody();
+        //} catch (Exception ignored) {
+
+        //}
+        //return s;
     }
 
     /**
@@ -938,6 +1066,7 @@ public class UpdateDataService {
             }
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
         return laststr.toString();
     }
@@ -1090,40 +1219,7 @@ public class UpdateDataService {
                                     mapList.getJSONObject(keyId).getDouble("value"));
                         }
 
-                        Pattern pattern = Pattern.compile("<(.*?)>");
-                        Matcher matcher = pattern.matcher(skillDescJson.getString("description"));
-
-                        //使用正则表达式替换参数
-                        Pattern p = Pattern.compile("(\\{-?([a-zA-Z/.\\]\\[0-9_@]+):?([0-9.]*)(%?)\\})");
-                        //代码可以运行不要乱改.jpg
-                        //这个正则已经不断进化成我看不懂的形式了
-                        Matcher m = p.matcher(matcher.replaceAll(""));
-                        StringBuffer stringBuffer = new StringBuffer();
-
-                        while (m.find()) {
-                            String key = m.group(2).toLowerCase();
-                            String percent = m.group(4);
-
-                            Double val = parameters.get(key);
-                            String value;
-
-                            if (val != null) {
-                                if (!percent.equals("")) {
-                                    val = val * 100;
-                                }
-                                value = FormatStringUtil.FormatDouble2String(val) + percent;
-                            } else {
-                                try {
-                                    value = "" + skillDescJson.getInt(key);
-                                } catch (Exception e) {
-                                    value = key;
-                                }
-
-                            }
-                            m.appendReplacement(stringBuffer, value);
-                        }
-
-                        skillDesc.setDescription(m.appendTail(stringBuffer).toString().replace("--", "-"));
+                        skillDesc.setDescription(getValueByKeysFormatString(skillDescJson.getString("description"), parameters));
 
                         skillDesc.setSpType(skillDescJson.getJSONObject("spData").getInt("spType"));
                         skillDesc.setMaxCharge(skillDescJson.getJSONObject("spData").getInt("maxChargeTime"));
@@ -1244,6 +1340,7 @@ public class UpdateDataService {
                                 }
                                 break;
                             case "TALENT_DATA_ONLY":
+                            case "TALENT":
                                 candidates = part.getJSONObject("addOrOverrideTalentDataBundle").getJSONArray("candidates");
                                 for (int k = 0; k < candidates.length(); k++) {
                                     JSONObject candidate = candidates.getJSONObject(k);
@@ -1261,6 +1358,7 @@ public class UpdateDataService {
                                 }
                                 break;
                             case "TRAIT_DATA_ONLY":
+                            case "TRAIT":
                                 candidates = part.getJSONObject("overrideTraitDataBundle").getJSONArray("candidates");
                                 for (int k = 0; k < candidates.length(); k++) {
                                     JSONObject candidate = candidates.getJSONObject(k);
@@ -1333,22 +1431,24 @@ public class UpdateDataService {
     }
 
     public String getValueByKeysFormatString(String s, Map<String, Double> parameters){
+        //使用正则表达式替换参数
+        //代码可以运行不要乱改.jpg
+        //这个正则已经不断进化成我看不懂的形式了
         Pattern pattern = Pattern.compile("<(.*?)>");
         Matcher matcher = pattern.matcher(s);
         Pattern p = Pattern.compile("(\\{-?([a-zA-Z/.\\]\\[0-9_@]+):?([0-9.]*)(%?)\\})");
         Matcher m = p.matcher(matcher.replaceAll(""));
         StringBuffer stringBuffer = new StringBuffer();
-
         while (m.find()) {
             String buffKey = m.group(2).toLowerCase();
             String percent = m.group(4);
-
             Double val = parameters.get(buffKey);
             String value;
             if (!percent.equals("")) {
-                val = val * 100;
+                value = BigDecimal.valueOf(val).multiply(new BigDecimal(100)).toString() + "%";
+            } else {
+                value = FormatStringUtil.FormatDouble2String(val) + percent;
             }
-            value = FormatStringUtil.FormatDouble2String(val) + percent;
             m.appendReplacement(stringBuffer, value);
         }
         return m.appendTail(stringBuffer).toString().replace("--", "-");

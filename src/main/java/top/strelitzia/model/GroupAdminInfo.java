@@ -8,6 +8,7 @@ public class GroupAdminInfo {
     private Long groupId;
     private Integer found;
     private Long setupIntegral;
+    private int lookWorld;
 
     public Long getGroupId() {
         return groupId;
@@ -28,4 +29,8 @@ public class GroupAdminInfo {
     public Long getSetupIntegral() { return setupIntegral; }
 
     public void setSetupIntegral(Long setupIntegral) { this.setupIntegral = setupIntegral; }
+
+    public int getLookWorld() { return lookWorld; }
+
+    public void setLookWorld(int lookWorld) { this.lookWorld = lookWorld; }
 }

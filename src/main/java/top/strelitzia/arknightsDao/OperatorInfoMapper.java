@@ -1,6 +1,7 @@
 package top.strelitzia.arknightsDao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.OperatorBasicInfo;
 import top.strelitzia.model.OperatorName;
 import top.strelitzia.model.TalentInfo;
@@ -11,6 +12,8 @@ import java.util.List;
  * @author wangzy
  * @Date 2021/3/29 17:07
  **/
+
+@Repository
 public interface OperatorInfoMapper {
     //根据各种信息查找对应干员
     List<String> getOperatorNameByInfo(String Info);
@@ -21,8 +24,8 @@ public interface OperatorInfoMapper {
     //获取全部干员列表
     List<String> getAllOperatorId();
 
-    //获取全部干员姓名
-    List<OperatorName> getAllOperatorIdAndName();
+    //获取选定地区的全部干员姓名
+    List<OperatorName> getAllIdAndNameAndCV(String area);
 
     //查找干员档案
     OperatorBasicInfo getOperatorInfoByName(String name);
@@ -38,6 +41,12 @@ public interface OperatorInfoMapper {
 
     //按版本模糊查询声优
     List<String> getAllInfoNameLikeStr(String area,String str);
+
+    //根据星级查询干员名字列表
+    List<String> getOperatorNameByRarity(Integer info);
+
+    //根据职业查找干员名字列表
+    List<String> getOperatorNameByClass(Integer info);
 
     //根据生日查找干员
     List<String> getOperatorByBirthday(String birthday);
@@ -74,5 +83,17 @@ public interface OperatorInfoMapper {
 
     //根据干员名查找其职业
     Integer selectOperatorClassByName(String name);
+
+    //根据干员编号和语音名查找语音是否存在
+    Integer selectOperatorVoiceByCharIdAndName(@Param("type") String type, @Param("charId") String charId, @Param("name") String name);
+
+    //插入一条新的语音记录
+    Integer insertOperatorVoice(@Param("charId") String charId, @Param("type") String type, @Param("name") String name, @Param("file") String file);
+
+    //根据干员名查找语音记录
+    List<String> selectOperatorVoiceByName( @Param("name") String name);
+
+    //根据干员名和语音名查找语音记录
+    List<String> selectOperatorVoiceByNameAndVoice(@Param("type") String type, @Param("name") String name, @Param("voiceName") String voiceName);
 
 }

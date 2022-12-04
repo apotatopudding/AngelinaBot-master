@@ -28,16 +28,16 @@ public class TagsFoundService {
     @Autowired
     private AgentTagsMapper agentTagsMapper;
 
-    @Value("${baiduConfig.APP_ID}")
+    @Value("${baiduIdentifyConfig.APP_ID}")
     private String APP_ID;
 
-    @Value("${baiduConfig.API_KEY}")
+    @Value("${baiduIdentifyConfig.API_KEY}")
     private String API_KEY;
 
-    @Value("${baiduConfig.SECRET_KEY}")
+    @Value("${baiduIdentifyConfig.SECRET_KEY}")
     private String SECRET_KEY;
 
-    @AngelinaGroup(keyWords = {"公招截图", "公招", "公开招募"}, dHash = {"0001111110100110001111010010001100100011001001110010011100101101", "0001111101100111001101010110001101110011001001110010011100101111"}, description = "查询公招结果")
+    @AngelinaGroup(keyWords = {"公招截图", "公招", "公开招募"}, dHash = {"0001111110100110001111010010001100100011001001110010011100101101", "0001111101100111001101010110001101110011001001110010011100101111"}, description = "查询公招结果", sort = "查询功能",funcClass = "公招查询")
     public ReplayInfo FoundAgentByJson(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         Map<List<String>, List<AgentTagsInfo>> listMap = FoundTagsByImg(messageInfo.getImgUrlList().get(0));
@@ -50,7 +50,7 @@ public class TagsFoundService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"公招文字", "公招tag", "公招词条"}, description = "通过文字方式访问公招结果，用逗号分割")
+    @AngelinaGroup(keyWords = {"公招文字", "公招tag", "公招词条"}, description = "通过文字方式访问公招结果，用逗号分割", sort = "查询功能",funcClass = "公招查询")
     public ReplayInfo FoundAgentByArray(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {
@@ -69,7 +69,10 @@ public class TagsFoundService {
 
     public Map<List<String>, List<AgentTagsInfo>> FoundTagsByImg(String url) {
         //单例模式的百度API实例
-        BaiduAPIUtil baiduAPIUtil = BaiduAPIUtil.getInstance(APP_ID, API_KEY, SECRET_KEY);
+        BaiduAPIUtil baiduAPIUtil = BaiduAPIUtil.getInstance(1);
+        if(baiduAPIUtil == null){
+            baiduAPIUtil = BaiduAPIUtil.setInstance(1,APP_ID, API_KEY, SECRET_KEY);
+        }
 
         //调用百度api图片识别
         String[] s = baiduAPIUtil.BaiduOCRGetTags(url);

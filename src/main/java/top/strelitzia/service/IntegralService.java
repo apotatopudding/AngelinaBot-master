@@ -6,12 +6,11 @@ import top.angelinaBot.annotation.AngelinaFriend;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
+import top.angelinaBot.util.AdminUtil;
 import top.strelitzia.dao.AdminUserMapper;
 import top.strelitzia.dao.GroupAdminInfoMapper;
 import top.strelitzia.dao.IntegralMapper;
-import top.strelitzia.model.AdminUserInfo;
 import top.strelitzia.model.IntegralInfo;
-import top.strelitzia.util.AdminUtil;
 
 import java.util.List;
 import java.util.Random;
@@ -28,18 +27,18 @@ public class IntegralService {
     @Autowired
     private AdminUserMapper adminUserMapper;
 
-    @AngelinaGroup(keyWords = {"签到"}, description = "每日签到")
+    @AngelinaGroup(keyWords = {"签到"}, description = "每日签到", sort = "娱乐功能",funcClass = "签到")
     public ReplayInfo checkIn(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        Integer special = this.groupAdminInfoMapper.selectBySetting(messageInfo.getGroupId());//特殊奖励查询
-        Integer allSpecial = this.groupAdminInfoMapper.selectBySetting(999999999L);//全局特殊奖励查询
+        Integer special = this.groupAdminInfoMapper.selectIntegralBySetting(messageInfo.getGroupId());//特殊奖励查询
+        Integer allSpecial = this.groupAdminInfoMapper.selectIntegralBySetting(999999999L);//全局特殊奖励查询
         if(allSpecial == null){
             allSpecial = 0;
-            this.groupAdminInfoMapper.insertByGroupId(999999999L,allSpecial);
+            this.groupAdminInfoMapper.insertIntegralByGroupId(999999999L,allSpecial);
         }
         if(special == null) {
             special = 0;
-            this.groupAdminInfoMapper.insertByGroupId(messageInfo.getGroupId(),special);
+            this.groupAdminInfoMapper.insertIntegralByGroupId(messageInfo.getGroupId(),special);
         }
         //查询当天是否已签到
         Integer today = this.integralMapper.selectDayCountByQQ(messageInfo.getQq());
@@ -50,7 +49,7 @@ public class IntegralService {
             int add;
             if(allSpecial!=0) add = allSpecial;//全局特殊奖励高于群组特殊奖励
             else if(special!=0) add = special;//群组特殊奖励
-            else add = new Random().nextInt(5) + 5;//随机加5~10分
+            else add = new Random().nextInt(6) + 5;//随机加5~10分
             integral = integral + add;
             this.integralMapper.integralByGroupId(messageInfo.getGroupId(),messageInfo.getName(),messageInfo.getQq(),integral);
             replayInfo.setReplayMessage("每日签到成功，获得积分："+add+"分");
@@ -65,8 +64,7 @@ public class IntegralService {
     public ReplayInfo setGroupSpecial(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         //先判断权限，只能由管理员设置特设积分
-        List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        if (!AdminUtil.getSqlAdmin(messageInfo.getQq(), admins)) {
+        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
             replayInfo.setReplayMessage("您无修改权限");
         }else {
             //对第一层进行判断，如果存在数字群组号则载入，不存在或不为数字则返回告知
@@ -81,7 +79,7 @@ public class IntegralService {
                                 replayInfo.setReplayMessage("您的积分数量输入有误，请输入数字积分数量");
                             }else {
                                 int special = Integer.parseInt(messageInfo.getArgs().get(2));
-                                this.groupAdminInfoMapper.insertByGroupId(999999999L,special);
+                                this.groupAdminInfoMapper.insertIntegralByGroupId(999999999L,special);
                                 replayInfo.setReplayMessage("设置成功，全局特设积分已改为"+special+"分");
                             }
                         }else {
@@ -99,7 +97,7 @@ public class IntegralService {
                             replayInfo.setReplayMessage("您的积分数量输入有误，请输入数字积分数量");
                         }else {
                             int special = Integer.parseInt(messageInfo.getArgs().get(2));
-                            this.groupAdminInfoMapper.insertByGroupId(groupId,special);
+                            this.groupAdminInfoMapper.insertIntegralByGroupId(groupId,special);
                             replayInfo.setReplayMessage("设置成功，群组号码"+groupId+"的特设积分已改为"+special+"分");
                         }
                     }else {
@@ -113,7 +111,7 @@ public class IntegralService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"查询积分榜"}, description = "积分榜查询")
+    @AngelinaGroup(keyWords = {"查询积分榜"}, description = "积分榜查询", sort = "娱乐功能",funcClass = "签到")
     public ReplayInfo inquireIntegral(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if(messageInfo.getArgs().size()>1){

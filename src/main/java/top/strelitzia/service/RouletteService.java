@@ -23,7 +23,7 @@ public class RouletteService {
     //轮盘赌对决map
     private static final Map<Long,List<Long>> rouletteDuel = new HashMap<>();
 
-    @AngelinaGroup(keyWords = {"上子弹","上膛"}, description = "守护铳轮盘赌，看看谁是天命之子(多颗子弹直接在后面输入数字）")
+    @AngelinaGroup(keyWords = {"上子弹","上膛"}, description = "守护铳轮盘赌，看看谁是天命之子(多颗子弹直接在后面输入数字）", sort = "娱乐功能",funcClass = "轮盘赌")
     public ReplayInfo Roulette(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         int bulletNum ;
@@ -56,12 +56,10 @@ public class RouletteService {
         }else {
             bulletNum = 1;
         }
-        int bullet = 0;
+        int bullet;
         if (bulletNum == 1){
             //只加一个子弹
-            for (int j=0;j<6;j++){
-                bullet=bullet+new Random().nextInt(2);
-            }
+            bullet = new Random().nextInt(6) + 1;
             replayInfo.setReplayMessage("（放入了 1 颗子弹）");
             sendMessageUtil.sendGroupMsg(replayInfo);
         }else {
@@ -69,7 +67,7 @@ public class RouletteService {
             LinkedList<Integer> list = new LinkedList<>();
             List<Integer> situList = new ArrayList<>(Arrays.asList(0,1,2,3,4,5));
             for(int i=0;i<bulletNum;i++){
-                int situ = new Random().nextInt(situList.size());
+                int situ = new Random(System.nanoTime()).nextInt(situList.size());
                 bullet = situList.get(situ);
                 situList.remove(situ);
                 list.add(bullet);
@@ -84,7 +82,7 @@ public class RouletteService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"开枪"}, description = "进入生死的轮回")
+    @AngelinaGroup(keyWords = {"开枪"}, description = "进入生死的轮回", sort = "娱乐功能",funcClass = "轮盘赌")
     public ReplayInfo openGun(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<Integer> rouletteNum = rouletteInfo.get(messageInfo.getGroupId());
@@ -120,7 +118,7 @@ public class RouletteService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"轮盘对决"}, description = "六人参赛，一人丧命")
+    @AngelinaGroup(keyWords = {"轮盘对决"}, description = "六人参赛，一人丧命", sort = "娱乐功能",funcClass = "轮盘赌")
     public ReplayInfo RouletteDuel(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (rouletteDuel.containsKey(messageInfo.getGroupId())){
@@ -170,12 +168,12 @@ public class RouletteService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"对决开始"}, description = "轮盘对决的生死抉择开始了")
+    @AngelinaGroup(keyWords = {"对决开始"}, description = "轮盘对决的生死抉择开始了", sort = "娱乐功能",funcClass = "轮盘赌")
     public ReplayInfo RouletteDuelBegging(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<Long> QQList = rouletteDuel.get(messageInfo.getGroupId());
         //查询次数决定能不能开始
-        if(QQList.size() < 6){
+        if(QQList == null || QQList.size() < 6){
             replayInfo.setReplayMessage("参赛人数还不足六人，还不能开始对决呢。");
         }else {
             //计算子弹位置设立随机数
@@ -210,7 +208,7 @@ public class RouletteService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"轮盘对决结束"}, description = "结束轮盘对决")
+    @AngelinaGroup(keyWords = {"轮盘对决结束"}, description = "结束轮盘对决", sort = "娱乐功能",funcClass = "轮盘赌")
     public ReplayInfo closeRoulette(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         rouletteDuel.remove(messageInfo.getGroupId());
@@ -218,7 +216,7 @@ public class RouletteService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"轮盘赌结束"}, description = "结束轮盘赌")
+    @AngelinaGroup(keyWords = {"轮盘赌结束"}, description = "结束轮盘赌", sort = "娱乐功能",funcClass = "轮盘赌")
     public ReplayInfo closeRouletteDuel(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         rouletteInfo.remove(messageInfo.getGroupId());

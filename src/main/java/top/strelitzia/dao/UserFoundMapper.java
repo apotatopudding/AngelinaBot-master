@@ -1,6 +1,7 @@
 package top.strelitzia.dao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.UserFoundInfo;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
  * @author wangzy
  * @Date 2020/12/7 13:50
  **/
+@Repository
 public interface UserFoundMapper {
 
     //更新某用户今日抽卡数，同时更新这个用户所属群号以及群昵称
@@ -26,9 +28,6 @@ public interface UserFoundMapper {
 
     //清空每日抽卡次数
     Integer cleanTodayCount();
-
-    //抽卡数
-    Integer selectTodaySearchByQQ(Long qq);
 
     List<Long> selectCakeGroups(@Param("uid") Long uid);
 }

@@ -10,9 +10,7 @@ public class EquipInfo {
     private String desc;
     private Integer equipLevel;
 
-    public Integer getEquipLevel() {
-        return equipLevel;
-    }
+    public Integer getEquipLevel() { return equipLevel; }
 
     public void setEquipLevel(Integer equipLevel) {
         this.equipLevel = equipLevel;

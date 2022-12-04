@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
+ * 单例模式获取的百度云的配置
+ * 在首次使用时，需要使用setInstance写入百度云提供的数据而获取返回值
+ * 后续可以直接使用getInstance读取已存储的静态值
  * @author strelitzia
  * @Date 2022/05/03 14:38
  **/
@@ -19,7 +22,9 @@ public class BaiduAPIUtil{
     /**
      * 单例实现
      */
-    private static volatile BaiduAPIUtil instance = null;
+    private static volatile BaiduAPIUtil identifyInstance = null;
+
+    private static volatile BaiduAPIUtil auditInstance = null;
 
     public String APP_ID;
     public String API_KEY;
@@ -31,15 +36,43 @@ public class BaiduAPIUtil{
         this.SECRET_KEY = SECRET_KEY;
     }
 
-    public static BaiduAPIUtil getInstance(String APP_ID, String API_KEY, String SECRET_KEY) {
-        if (instance == null) {
-            synchronized (BaiduAPIUtil.class) {
-                if (instance == null) {
-                    instance = new BaiduAPIUtil(APP_ID, API_KEY, SECRET_KEY);
+    //分离首次读取和后续读取
+    public static BaiduAPIUtil getInstance(int a) {
+        if (a == 1) {
+            return identifyInstance;
+        }else {
+            return auditInstance;
+        }
+    }
+
+    /**
+     * 可选的单例模式
+     * @param a 1为调用百度识图的单例，2为调用百度审核的单例
+     * @param APP_ID 百度云提供的APP_ID
+     * @param API_KEY 百度云提供的API_KEY
+     * @param SECRET_KEY 百度云提供的SECRET_KEY
+     * @return 写入完毕的当前静态单例值
+     */
+    public static BaiduAPIUtil setInstance(int a,String APP_ID, String API_KEY, String SECRET_KEY){
+        if (a == 1) {
+            if (identifyInstance == null) {
+                synchronized (BaiduAPIUtil.class) {
+                    if (identifyInstance == null) {
+                        identifyInstance = new BaiduAPIUtil(APP_ID, API_KEY, SECRET_KEY);
+                    }
                 }
             }
+            return identifyInstance;
+        }else {
+            if (auditInstance == null) {
+                synchronized (BaiduAPIUtil.class) {
+                    if (auditInstance == null) {
+                        auditInstance = new BaiduAPIUtil(APP_ID, API_KEY, SECRET_KEY);
+                    }
+                }
+            }
+            return auditInstance;
         }
-        return instance;
     }
 
     /**
@@ -68,7 +101,7 @@ public class BaiduAPIUtil{
         List<String> allTag = Arrays.asList(all);
 
         // 调用接口
-        JSONObject res = client.basicAccurateGeneral(url, new HashMap<>());
+        JSONObject res = client.basicAccurateGeneral(1, url, new HashMap<>());
         JSONArray words_result = new JSONArray(res.get("words_result").toString());
         List<String> str = new ArrayList<>();
         for (int i = 0; i < words_result.length(); i++) {
@@ -80,6 +113,28 @@ public class BaiduAPIUtil{
         String[] s = new String[str.size()];
         str.toArray(s);
         return s;
+    }
+
+    /**
+     *  百度图片审核方法
+     * @param url 图片url
+     * @return
+     */
+    public String BaiduCheck(String url) {
+        // 初始化一个AipOcr
+        MyApiOcr client = new MyApiOcr(APP_ID, API_KEY, SECRET_KEY);
+
+        // 可选：设置网络连接参数
+        client.setConnectionTimeoutInMillis(2000);
+        client.setSocketTimeoutInMillis(60000);
+
+        // 可选：设置log4j日志输出格式，若不设置，则使用默认配置
+        // 也可以直接通过jvm启动参数设置此环境变量
+        System.setProperty("aip.log4j.conf", "path/to/your/log4j.properties");
+
+        // 调用接口
+        JSONObject res = client.basicAccurateGeneral(2, url, new HashMap<>());
+        return res.getString("conclusion");
     }
 
     //public byte[] base64ToImgByteArray(String base64) throws IOException {
@@ -108,15 +163,24 @@ class MyApiOcr extends BaseClient{
         super(appId, apiKey, secretKey);
     }
 
-    public JSONObject basicAccurateGeneral(String url, HashMap<String, String> options) {
+    //图像识别为1，图像审核为2
+    public JSONObject basicAccurateGeneral(int way, String url, HashMap<String, String> options) {
         AipRequest request = new AipRequest();
         preOperation(request);
 
-        request.addBody("url", url);
+        if (way == 1) {
+            request.addBody("url", url);
+        }else {
+            request.addBody("imgUrl", url);
+        }
         if (options != null) {
             request.addBody(options);
         }
-        request.setUri("https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic");
+        if (way == 1) {
+            request.setUri("https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic");
+        }else {
+            request.setUri("https://aip.baidubce.com/rest/2.0/solution/v1/img_censor/v2/user_defined");
+        }
         postOperation(request);
         return requestServer(request);
     }

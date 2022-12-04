@@ -1,5 +1,6 @@
 package top.strelitzia.service;
 
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.angelinaBot.annotation.AngelinaGroup;
@@ -52,9 +53,10 @@ public class test {
     public ReplayInfo changeFormat(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         File sourceFile = new File("runFile/Audio/source.mp3");//输入
-        File targetFile = new File("runFile/Audio/target.amr");//输出
-        AudioUtil.amrToMp3(sourceFile, targetFile);//转换
-        replayInfo.setReplayMessage("转换完成");
+        File targetFile = new File("runFile/Audio/source.amr");//输出
+        AudioUtil.mp3ToAmr(sourceFile, targetFile);//转换
+        replayInfo.setReplayAudio(targetFile);
+        //replayInfo.setReplayMessage("转换完成");
         return replayInfo;
     }
 
@@ -112,6 +114,8 @@ public class test {
         replayInfo.setReplayImg(img);
         return replayInfo;
     }
+
+
 
 }
 

@@ -7,13 +7,14 @@ import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
+import top.angelinaBot.util.AdminUtil;
 import top.strelitzia.arknightsDao.OperatorInfoMapper;
 import top.strelitzia.dao.*;
 import top.strelitzia.model.AdminUserInfo;
 import top.strelitzia.model.AgentInfo;
 import top.strelitzia.model.GroupAdminInfo;
 import top.strelitzia.model.UserFoundInfo;
-import top.strelitzia.util.AdminUtil;
+import top.strelitzia.util.FoundUtil;
 import top.strelitzia.util.FormatStringUtil;
 import top.strelitzia.util.FoundAgentUtil;
 
@@ -54,7 +55,7 @@ public class AgentService {
     private OperatorInfoMapper operatorInfoMapper;
 
 
-    @AngelinaGroup(keyWords = {"单抽"}, description = "文字单次模拟抽卡")
+    @AngelinaGroup(keyWords = {"单抽"}, description = "文字单次模拟抽卡", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo chouKa(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<String> args = messageInfo.getArgs();
@@ -66,7 +67,7 @@ public class AgentService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"十连", "十抽"}, description = "文字十连模拟抽卡")
+    @AngelinaGroup(keyWords = {"十连", "十抽"}, description = "文字十连模拟抽卡", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo shiLian(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<String> args = messageInfo.getArgs();
@@ -78,7 +79,7 @@ public class AgentService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"十连寻访"}, description = "图片十连模拟抽卡")
+    @AngelinaGroup(keyWords = {"十连寻访"}, description = "图片十连模拟抽卡", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo XunFang(MessageInfo messageInfo) throws IOException {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         List<String> args = messageInfo.getArgs();
@@ -99,7 +100,7 @@ public class AgentService {
         //今日抽卡数
         Integer today = userFoundInfo.getTodayCount();
         List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        boolean b = AdminUtil.getFoundAdmin(messageInfo.getQq(), admins);
+        boolean b = FoundUtil.getFoundAdmin(messageInfo.getQq(), admins);
 
         if (today < limit || b) {
             //如果没输入卡池名或者卡池不存在
@@ -123,7 +124,7 @@ public class AgentService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"卡池", "卡池列表"}, description = "展示现有所有卡池")
+    @AngelinaGroup(keyWords = {"卡池", "卡池列表"}, description = "展示现有所有卡池", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo selectPool(MessageInfo messageInfo) {
         String pool = "";
         if (messageInfo.getArgs().size() > 1) {
@@ -140,7 +141,7 @@ public class AgentService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"垫刀"}, description = "展示当前垫刀数、抽卡记录")
+    @AngelinaGroup(keyWords = {"垫刀"}, description = "展示当前垫刀数、抽卡记录", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo selectFoundCount(MessageInfo messageInfo) {
         UserFoundInfo userFoundInfo = userFoundMapper.selectUserFoundByQQ(messageInfo.getQq());
         Integer todayCount = 0;
@@ -172,7 +173,7 @@ public class AgentService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"卡池清单", "卡池干员", "卡池up"}, description = "展示某个卡池的up干员")
+    @AngelinaGroup(keyWords = {"卡池清单", "卡池干员", "卡池up"}, description = "展示某个卡池的up干员", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo selectPoolAgent(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() < 2) {
@@ -197,11 +198,10 @@ public class AgentService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = "抽卡次数", description = "调整抽卡次数，请")
+    @AngelinaGroup(keyWords = "抽卡次数", description = "调整当前群组的抽卡次数", sort = "娱乐功能",funcClass = "游戏卡池")
     public ReplayInfo updateGroupFoundCount(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        boolean sqlAdmin = AdminUtil.getSqlAdmin(messageInfo.getQq(), adminUserMapper.selectAllAdmin());
-        if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !sqlAdmin) {
+        if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !AdminUtil.getAdmin(messageInfo.getQq())) {
             replayInfo.setReplayMessage("只有本群群主或管理员才可以调整抽卡次数");
         } else {
             if (messageInfo.getArgs().size() > 1) {
@@ -240,7 +240,7 @@ public class AgentService {
         Integer today = userFoundInfo.getTodayCount();
         String s = "今日抽卡机会无了";
         List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        boolean b = AdminUtil.getFoundAdmin(qq, admins);
+        boolean b = FoundUtil.getFoundAdmin(qq, admins);
         Integer limit = groupAdminInfoService.getGroupFoundAdmin(groupId);
         if (today < limit || b) {
             //如果没输入卡池名或者卡池不存在
@@ -261,8 +261,8 @@ public class AgentService {
      */
     public String FoundAgentByNum(int count, String pool, Long qq, Integer sum, String name, Long groupId) {
         List<AdminUserInfo> admins = adminUserMapper.selectAllAdmin();
-        boolean b = AdminUtil.getSixAdmin(qq, admins);
-        boolean c = AdminUtil.getBlackFriday(qq, admins);
+        boolean b = FoundUtil.getSixAdmin(qq, admins);
+        boolean c = FoundUtil.getBlackFriday(qq, admins);
         //如果没输入卡池名或者卡池不存在
         if (pool == null || agentMapper.selectPoolIsExit(pool).size() == 0) {
             pool = "常规";
@@ -427,8 +427,6 @@ public class AgentService {
         g.setFont(new Font("楷体", Font.BOLD, 20));
         g.setColor(Color.WHITE);
         //十连文字部分
-        g.drawString("", 470, 420);
-        g.drawString("", 470, 440);
         g.dispose();
         return image;
     }

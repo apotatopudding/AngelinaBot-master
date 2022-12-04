@@ -30,7 +30,7 @@ public class OperatorGuessExerciseService {
     //猜测尝试次数表
     private final Map<Long, Integer> GuessNum = new HashMap<>();
 
-    @AngelinaGroup(keyWords = {"档案补全"}, description = "根据提示猜测干员")
+    @AngelinaGroup(keyWords = {"档案补全"}, description = "根据提示猜测干员", sort = "娱乐功能",funcClass = "档案补全")
     public ReplayInfo beginTopic(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         //随机挑选一个干员
@@ -75,7 +75,7 @@ public class OperatorGuessExerciseService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"我知道了"}, description = "抢答当前提问题目")
+    @AngelinaGroup(keyWords = {"我知道了"}, description = "抢答当前提问题目", sort = "娱乐功能",funcClass = "档案补全")
     public ReplayInfo answerTopic(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         String SelectName = operatorList.get(messageInfo.getGroupId());

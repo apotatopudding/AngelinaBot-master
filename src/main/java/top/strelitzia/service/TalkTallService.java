@@ -27,15 +27,13 @@ public class TalkTallService {
 
     private final Set<Long> groupList = new HashSet<>();
 
-    @AngelinaGroup(keyWords = {"吹牛"},description = "吹牛游戏")
+    @AngelinaGroup(keyWords = {"吹牛"},description = "吹牛游戏", sort = "娱乐功能",funcClass = "吹牛")
     public ReplayInfo talkTall(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (groupList.contains(messageInfo.getGroupId())) {
             replayInfo.setReplayMessage("游戏还未结束，暂不可开启新局");
             return replayInfo;
         }
-        //添加群组防止重复开启
-        groupList.add(messageInfo.getGroupId());
         //检查积分是否足够
         int result = this.inquireIntegral(messageInfo.getQq());
         if (result != 0){
@@ -43,6 +41,8 @@ public class TalkTallService {
             else replayInfo.setReplayMessage("您的积分不足十分，多多参与活动获取更多积分吧");
             return replayInfo;
         }
+        //添加群组防止重复开启
+        groupList.add(messageInfo.getGroupId());
         //检查群临时会话是否开启
         MemberPermission permission = messageInfo.getBotPermission();
         if(permission.getLevel()<0){
@@ -112,16 +112,19 @@ public class TalkTallService {
                 replayInfo.setReplayMessage("请勿重复报名");
                 sendMessageUtil.sendGroupMsg(replayInfo);
                 replayInfo.setReplayMessage(null);
-                continue;
+            }else {
+                participantQQMap.put(recall.getQq(), recall.getName());
+                StringBuilder s = new StringBuilder();
+                s.append(recall.getName()).append("加入成功");
+                if (i == 5) {
+                    s.append("\n");
+                    s.append("五人已满，所有人已经就绪，游戏开始");
+                }
+                replayInfo.setReplayMessage(s.toString());
+                sendMessageUtil.sendGroupMsg(replayInfo);
+                replayInfo.setReplayMessage(null);
+                i++;
             }
-            participantQQMap.put(recall.getQq(),recall.getName());
-            replayInfo.setReplayMessage(recall.getName()+"加入成功");
-            if(i==5){
-                replayInfo.setReplayMessage("五人已满，所有人已经就绪，游戏开始");
-            }
-            sendMessageUtil.sendGroupMsg(replayInfo);
-            replayInfo.setReplayMessage(null);
-            i++;
         }
         TalkTallInfo talkTallInfo = new TalkTallInfo();
         //一轮换一个人
@@ -136,7 +139,7 @@ public class TalkTallService {
                     list.add(random);
                 }
                 //对结果去重，如果去重没有减少代表是顺子，继续循环扔，如果不是就关闭退出循环
-                HashSet<Integer> set = new HashSet<>(list);
+                Set<Integer> set = new HashSet<>(list);
                 if (set.size()!=6){
                     repetition = false;
                 }
@@ -300,7 +303,7 @@ public class TalkTallService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"吹牛描述"},description = "吹牛的游戏规则描述")
+    @AngelinaGroup(keyWords = {"吹牛描述"},description = "吹牛的游戏规则描述", sort = "娱乐功能",funcClass = "吹牛")
     public ReplayInfo talkTallDescription(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         String s = "吹牛规则如下：\n" +

@@ -7,7 +7,6 @@ import net.mamoe.mirai.contact.Member;
 import net.mamoe.mirai.contact.MemberPermission;
 import net.mamoe.mirai.message.data.PlainText;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaFriend;
 import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.container.AngelinaEventSource;
@@ -27,21 +26,21 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 
-@Service
+//@Service
 @Slf4j
 public class ArknightsBattleground {
 
     @Autowired
-    SendMessageUtil sendMessageUtil;
+    private SendMessageUtil sendMessageUtil;
 
     @Autowired
-    IntegralMapper integralMapper;
+    private IntegralMapper integralMapper;
 
     @Autowired
-    OperatorInfoMapper operatorInfoMapper;
+    private OperatorInfoMapper operatorInfoMapper;
 
     @Autowired
-    BattleGroundMapper battleGroundMapper;
+    private BattleGroundMapper battleGroundMapper;
 
     //群组功能表
     private static final Map<Long,BattleGroundGroupInfo> battleGroundGroup = new HashMap<>();
@@ -62,7 +61,7 @@ public class ArknightsBattleground {
         }
     };
 
-    @AngelinaGroup(keyWords = {"开始绝地作战"}, description = "花费十个积分，邀请十名选手，开启绝地作战")
+    @AngelinaGroup(keyWords = {"开始绝地作战"}, description = "花费十个积分，邀请十名选手，开启绝地作战", sort = "娱乐功能", funcClass = "绝地作战")
     public ReplayInfo beginBattleground(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         BattleGroundGroupInfo battleGroundGroupInfo = new BattleGroundGroupInfo();
@@ -476,7 +475,7 @@ public class ArknightsBattleground {
     }
 
     //卡西米尔骑士对抗赛
-    @AngelinaGroup(keyWords = {"出击"}, description = "战胜对手，赢得荣耀，欢呼吧！")
+    @AngelinaGroup(keyWords = {"出击"}, description = "战胜对手，赢得荣耀，欢呼吧！", sort = "娱乐功能", funcClass = "绝地作战")
     public ReplayInfo fieldOfHonor(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         //检查活动是否开启
@@ -663,7 +662,7 @@ public class ArknightsBattleground {
     }
 
     //查询当前属性值
-    @AngelinaGroup(keyWords = {"绝地查询"}, description = "当前个人属性查询")
+    @AngelinaGroup(keyWords = {"绝地查询"}, description = "当前个人属性查询", sort = "娱乐功能", funcClass = "绝地作战")
     @AngelinaFriend(keyWords = {"绝地查询"}, description = "当前个人属性查询")
     public ReplayInfo personalQuery(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
@@ -704,7 +703,7 @@ public class ArknightsBattleground {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"绝地游戏描述"}, description = "当前个人属性查询")
+    @AngelinaGroup(keyWords = {"绝地游戏描述"}, description = "当前个人属性查询", sort = "娱乐功能", funcClass = "绝地作战")
     public ReplayInfo battleDescription(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         TextLine textLine = new TextLine(100);
@@ -941,11 +940,11 @@ public class ArknightsBattleground {
      */
     public void againstInfo(Long duel, ReplayInfo replayInfo) {
         //群组信息
-        BattleGroundGroupInfo battleGroundGroupInfo = battleGroundGroup.get(replayInfo.getGroupId());
+        BattleGroundGroupInfo battleGroundGroupInfo = battleGroundGroup.get(replayInfo.getGroupId().get(0));
         boolean alreadyBegan = battleGroundGroupInfo.getAlreadyBegan();
 
         //个人信息
-        BattleGroundInfo battleGroundInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId(),replayInfo.getQq());
+        BattleGroundInfo battleGroundInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId().get(0),replayInfo.getQq());
         Integer health = battleGroundInfo.getHealth();
         Integer physicsAttack = battleGroundInfo.getPhysicsAttack();
         Integer magicAttack = battleGroundInfo.getMagicAttack();
@@ -955,7 +954,7 @@ public class ArknightsBattleground {
         Integer reduceDamage = battleGroundInfo.getReduceDamage();
 
         //对手信息
-        BattleGroundInfo duelInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId(),duel );
+        BattleGroundInfo duelInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId().get(0),duel);
         Integer duelHealth = duelInfo.getHealth();
         Integer duelPhysicsAttack = duelInfo.getPhysicsAttack();
         Integer duelMagicAttack = duelInfo.getMagicAttack();
@@ -1105,18 +1104,18 @@ public class ArknightsBattleground {
      */
     public ReplayInfo casualtyReporting(Long duel,ReplayInfo replayInfo){
         //个人信息
-        BattleGroundInfo battleGroundInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId(),replayInfo.getQq());
+        BattleGroundInfo battleGroundInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId().get(0),replayInfo.getQq());
         Integer health = battleGroundInfo.getHealth();
         String name = battleGroundInfo.getName();
 
         //对手信息
-        BattleGroundInfo duelInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId(),duel );
+        BattleGroundInfo duelInfo = battleGroundMapper.selectInfoByGroupAndQQ(replayInfo.getGroupId().get(0),duel );
         Integer duelHealth = duelInfo.getHealth();
         String duelName = duelInfo.getName();
 
         //记录信息以便发送
         Bot bot = Bot.getInstance(replayInfo.getLoginQQ());
-        Group group = bot.getGroupOrFail(replayInfo.getGroupId());
+        Group group = bot.getGroupOrFail(replayInfo.getGroupId().get(0));
         if ( duelHealth==0 ){
             if ( health==0 ){
                 replayInfo.setReplayMessage("战报："+ name +"与"+ duelName +"在遭遇战中破釜沉舟，视死如归。但很可惜，由于势均力敌，他们双双殒命，真是一场精彩的对决");

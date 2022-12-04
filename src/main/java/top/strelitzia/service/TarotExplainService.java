@@ -9,7 +9,6 @@ import top.angelinaBot.model.TextLine;
 import top.strelitzia.dao.TarotCardMapper;
 import top.strelitzia.model.TarotCardInfo;
 
-import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -19,8 +18,9 @@ public class TarotExplainService {
     private TarotCardMapper tarotCardMapper;
 
 
+
     @AngelinaFriend(keyWords = {"远山小姐解牌"}, description = "查询塔罗牌解牌信息")
-    public ReplayInfo getOperatorTarot(MessageInfo messageInfo) throws IOException {
+    public ReplayInfo getOperatorTarot(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (messageInfo.getArgs().size() > 1) {
             String tarotCardId = messageInfo.getArgs().get(1);
@@ -28,7 +28,7 @@ public class TarotExplainService {
             if (tarotCardInfos.size() > 0) {
                 TextLine textLine = new TextLine(25);
                 for (TarotCardInfo tarotCardInfo:tarotCardInfos) {
-                    textLine.addString("您咨询的卡牌为：" + tarotCardId);
+                    textLine.addString("您咨询的卡牌为：【" + tarotCardInfo.getTarotCardID()+"】");
                     textLine.nextLine();
                     textLine.addString("牌义：");
                     textLine.nextLine();
