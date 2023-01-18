@@ -48,6 +48,9 @@ public class APIService {
     @Autowired
     private SendMessageUtil sendMessageUtil;
 
+    @Autowired
+    private NotClassifiedService not;
+
     private static volatile String instance;
 
     @Value("${APIConfig.token}")
@@ -151,16 +154,19 @@ public class APIService {
      * 每日看世界的图片方式API解析
      */
     public boolean lookWorldPic(){
+        /*
         String jsonUrl = "http://bjb.yunwj.top/php/tp/lj.php";
         String picUrl;
         try {
             JSONObject json = readJsonFromUrl(jsonUrl);
-            picUrl = json.getString("tp");
+            picUrl = json.getString("tp1");
         }catch (JSONException | NullPointerException e){
             e.printStackTrace();
             autoPrint();
             return true;
         }
+        */
+        String picUrl = "https://api.03c3.cn/zb/";
         try {
             CloseableHttpClient httpClient  = HttpClients.createDefault();
             CloseableHttpResponse response;
@@ -184,16 +190,13 @@ public class APIService {
             return false;
         }
         return true;
-        //URL url = new URL("http://bjb.yunwj.top/php/tp/1.jpg");
+        //URL url = new URL("http://bjb.yunwj.top/php/tp/60.jpg");
 
     }
 
-    @Value("${userConfig.ownerQQ}")
-    private String ownerQQ;
-
     public void autoPrint(){
         ReplayInfo replayInfo = new ReplayInfo();
-        replayInfo.setQq(Long.valueOf(NotClassifiedService.QQSetInstance(ownerQQ)));
+        replayInfo.setQq(Long.valueOf(not.QQSetInstance()));
         Iterator<Long> it = MiraiFrameUtil.messageIdMap.values().iterator();
         replayInfo.setLoginQQ(it.next());
         replayInfo.setReplayMessage("自动获取失败，请手动存入当日的六十秒图片");
@@ -258,7 +261,7 @@ public class APIService {
     /**
      * 每日看世界的文字方式API解析
      */
-    public static boolean lookWorldWord() {
+    public boolean lookWorldWord() {
         String url = "http://bjb.yunwj.top/php/qq.php";
         try {
             JSONObject json = readJsonFromUrl(url);

@@ -1,5 +1,6 @@
 package top.strelitzia.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import top.angelinaBot.annotation.AngelinaFriend;
@@ -7,14 +8,14 @@ import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.util.AdminUtil;
-import top.strelitzia.dao.AdminUserMapper;
+import top.angelinaBot.util.SendMessageUtil;
 import top.strelitzia.dao.GroupAdminInfoMapper;
 import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.model.IntegralInfo;
 
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
+@Slf4j
 @Service
 public class IntegralService {
 
@@ -25,7 +26,7 @@ public class IntegralService {
     private GroupAdminInfoMapper groupAdminInfoMapper;
 
     @Autowired
-    private AdminUserMapper adminUserMapper;
+    private SendMessageUtil sendMessageUtil;
 
     @AngelinaGroup(keyWords = {"签到"}, description = "每日签到", sort = "娱乐功能",funcClass = "签到")
     public ReplayInfo checkIn(MessageInfo messageInfo) {

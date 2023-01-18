@@ -98,66 +98,70 @@ public class OperatorInfoService {
         if (messageInfo.getArgs().size() > 1) {
             String name = messageInfo.getArgs().get(1);
             String realName = nickNameMapper.selectNameByNickName(name);
-            if (realName != null && !realName.equals(""))
-                name = realName;
-
+            if (realName != null && !realName.equals("")) name = realName;
             OperatorBasicInfo operatorInfoByName = operatorInfoMapper.getOperatorInfoByName(name);
-            String s = name + "干员的档案为：\n";
-            if (messageInfo.getArgs().size() == 2) {
-                s += "基础档案：\n" +
-                        "画师：" + operatorInfoByName.getDrawName() + '\t' +
-                        "声优：" + operatorInfoByName.getCvNameOfJP() + '\n' +
-                        "代号：" + operatorInfoByName.getCodeName() + '\t' +
-                        "性别：" + operatorInfoByName.getSex() + '\t' +
-                        "出身地：" + operatorInfoByName.getComeFrom() + '\n' +
-                        "生日：" + operatorInfoByName.getBirthday() + '\t' +
-                        "种族：" + operatorInfoByName.getRace() + '\t' +
-                        "身高：" + operatorInfoByName.getHeight() + '\n' +
-                        "矿石病感染情况：" + operatorInfoByName.getInfection();
-            } else {
-                switch (messageInfo.getArgs().get(2)) {
-                    case "全部档案":
-                        s += operatorInfoByName.toString();
-                        break;
-                    case "基础档案":
-                        s += "基础档案：\n" +
-                                "画师：" + operatorInfoByName.getDrawName() + '\t' +
-                                "声优：" + operatorInfoByName.getCvNameOfJP() + '\n' +
-                                "代号：" + operatorInfoByName.getCodeName() + '\t' +
-                                "性别：" + operatorInfoByName.getSex() + '\t' +
-                                "出身地：" + operatorInfoByName.getComeFrom() + '\n' +
-                                "生日：" + operatorInfoByName.getBirthday() + '\t' +
-                                "种族：" + operatorInfoByName.getRace() + '\t' +
-                                "身高：" + operatorInfoByName.getHeight() + '\n' +
-                                "矿石病感染情况：" + operatorInfoByName.getInfection();
-                        break;
-                    case "综合体检测试":
-                        s += operatorInfoByName.getComprehensiveTest();
-                        break;
-                    case "客观履历":
-                        s += operatorInfoByName.getObjectiveResume();
-                        break;
-                    case "临床诊断分析":
-                        s += operatorInfoByName.getClinicalDiagnosis();
-                        break;
-                    case "档案资料一":
-                        s += operatorInfoByName.getArchives1();
-                        break;
-                    case "档案资料二":
-                        s += operatorInfoByName.getArchives2();
-                        break;
-                    case "档案资料三":
-                        s += operatorInfoByName.getArchives3();
-                        break;
-                    case "档案资料四":
-                        s += operatorInfoByName.getArchives4();
-                        break;
-                    case "晋升记录":
-                    case "晋升资料":
-                        s += operatorInfoByName.getPromotionInfo();
-                        break;
+            String s;
+            if(operatorInfoByName == null){
+                s = "未找到该干员档案信息";
+            }else {
+                s = name + "干员的档案为：\n";
+                if (messageInfo.getArgs().size() == 2) {
+                    s += "基础档案：\n" +
+                            "画师：" + operatorInfoByName.getDrawName() + '\t' +
+                            "声优：" + operatorInfoByName.getCvNameOfJP() + '\n' +
+                            "代号：" + operatorInfoByName.getCodeName() + '\t' +
+                            "性别：" + operatorInfoByName.getSex() + '\t' +
+                            "出身地：" + operatorInfoByName.getComeFrom() + '\n' +
+                            "生日：" + operatorInfoByName.getBirthday() + '\t' +
+                            "种族：" + operatorInfoByName.getRace() + '\t' +
+                            "身高：" + operatorInfoByName.getHeight() + '\n' +
+                            "矿石病感染情况：" + operatorInfoByName.getInfection();
+                } else {
+                    switch (messageInfo.getArgs().get(2)) {
+                        case "全部档案":
+                            s += operatorInfoByName.toString();
+                            break;
+                        case "基础档案":
+                            s += "基础档案：\n" +
+                                    "画师：" + operatorInfoByName.getDrawName() + '\t' +
+                                    "声优：" + operatorInfoByName.getCvNameOfJP() + '\n' +
+                                    "代号：" + operatorInfoByName.getCodeName() + '\t' +
+                                    "性别：" + operatorInfoByName.getSex() + '\t' +
+                                    "出身地：" + operatorInfoByName.getComeFrom() + '\n' +
+                                    "生日：" + operatorInfoByName.getBirthday() + '\t' +
+                                    "种族：" + operatorInfoByName.getRace() + '\t' +
+                                    "身高：" + operatorInfoByName.getHeight() + '\n' +
+                                    "矿石病感染情况：" + operatorInfoByName.getInfection();
+                            break;
+                        case "综合体检测试":
+                            s += operatorInfoByName.getComprehensiveTest();
+                            break;
+                        case "客观履历":
+                            s += operatorInfoByName.getObjectiveResume();
+                            break;
+                        case "临床诊断分析":
+                            s += operatorInfoByName.getClinicalDiagnosis();
+                            break;
+                        case "档案资料一":
+                            s += operatorInfoByName.getArchives1();
+                            break;
+                        case "档案资料二":
+                            s += operatorInfoByName.getArchives2();
+                            break;
+                        case "档案资料三":
+                            s += operatorInfoByName.getArchives3();
+                            break;
+                        case "档案资料四":
+                            s += operatorInfoByName.getArchives4();
+                            break;
+                        case "晋升记录":
+                        case "晋升资料":
+                            s += operatorInfoByName.getPromotionInfo();
+                            break;
+                    }
                 }
             }
+
             replayInfo.setReplayMessage(s);
         } else {
             replayInfo.setReplayMessage("请输入干员名称");

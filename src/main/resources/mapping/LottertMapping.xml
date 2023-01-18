@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.strelitzia.dao.LotteryMapper">
+    <resultMap id="BaseResultMap" type="top.strelitzia.model.LotteryInfo">
+        <result column="lottery_code" property="lotteryCode" jdbcType="VARCHAR"/>
+        <result column="group_id" property="groupId" jdbcType="INTEGER"/>
+        <result column="qq" property="qq" jdbcType="VARCHAR"/>
+        <result column="name" property="name" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="selectLotteryCode" resultType="java.lang.Integer">
+        SELECT lottery_code FROM a_lottery;
+    </select>
+
+    <select id="selectLotteryCodeByQQ" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM a_lottery WHERE qq = #{qq};
+    </select>
+
+
+    <select id="selectInfo" resultMap="BaseResultMap">
+        SELECT * FROM a_lottery WHERE lottery_code = #{lotteryCode};
+    </select>
+
+    <insert id="insertInfo" parameterType="top.strelitzia.model.LotteryInfo">
+        INSERT INTO a_lottery(lottery_code, group_id, qq, name)
+        VALUES (#{LotteryCode},#{groupId},#{qq},#{name});
+    </insert>
+
+    <delete id="cleanAll">
+        DELETE FROM a_lottery
+    </delete>
+
+    <insert id="insertInfoToHistory" parameterType="top.strelitzia.model.LotteryInfo">
+        INSERT INTO a_lottery_history(date, lottery_code, qq, name,is_verify)
+        VALUES (#{date},#{lotteryCode},#{qq},#{name},0);
+    </insert>
+
+    <select id="selectLastCode" resultType="java.lang.Integer">
+        SELECT lottery_code FROM a_lottery_history order by date desc limit 1;
+    </select>
+
+    <select id="selectLastQQ" resultType="java.lang.Long">
+        SELECT qq FROM a_lottery_history order by date desc limit 1;
+    </select>
+
+    <select id="selectLastVerify" resultType="java.lang.Integer">
+        SELECT is_verify FROM a_lottery_history order by date desc limit 1;
+    </select>
+
+    <update id="updateLastVerify">
+        update a_integral set integral = 200 where QQ = 515133662
+        UPDATE a_lottery_history SET is_verify = 1 WHERE date = (SELECT max(date) FROM a_lottery_history);
+    </update>
+</mapper>

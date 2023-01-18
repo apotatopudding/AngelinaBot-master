@@ -4,8 +4,6 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import top.strelitzia.model.UserFoundInfo;
 
-import java.util.List;
-
 /**
  * @author wangzy
  * @Date 2020/12/7 13:50
@@ -28,6 +26,4 @@ public interface UserFoundMapper {
 
     //清空每日抽卡次数
     Integer cleanTodayCount();
-
-    List<Long> selectCakeGroups(@Param("uid") Long uid);
 }

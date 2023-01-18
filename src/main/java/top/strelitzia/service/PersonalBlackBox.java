@@ -40,15 +40,6 @@ public class PersonalBlackBox {
             if (boxList.containsKey(boxName)){
                 replayInfo.setReplayMessage("您要创建的卡池名已经存在了，换一个名字吧");
             }
-            //查询积分够不够开启卡池，足够则扣五分
-            Integer integral = this.integralMapper.selectByQQ(messageInfo.getQq());
-            if(integral==null){
-                replayInfo.setReplayMessage("您还没有积分呢，试着参与活动以获取积分吧");
-            }else if(integral<5){
-                replayInfo.setReplayMessage("您的积分不足以开启活动，多多争取吧");
-            }else {
-                integral = integral - 5;
-                this.integralMapper.integralByGroupId(messageInfo.getGroupId(),messageInfo.getName(),messageInfo.getQq(),integral);
                 List<String> cardList = new ArrayList<>();
                 replayInfo.setReplayMessage("卡池创建成功，请牢记您的卡池名，然后录入卡片信息");
                 sendMessageUtil.sendGroupMsg(replayInfo);
@@ -120,7 +111,6 @@ public class PersonalBlackBox {
                         log.info(e.getMessage()+boxName+"的线程已结束");
                     }
                 }).start();
-            }
         }else {
             replayInfo.setReplayMessage("烦请告知一下您要创建的新卡池名字呢");
         }
@@ -164,13 +154,6 @@ public class PersonalBlackBox {
                         boxInfo.setExit(true);
                         boxList.put(boxName,boxInfo);
                         replayInfo.setReplayMessage("好的博士，放在那里吧，我把手上的文件整理完就去");
-                        //奖励加分
-                        Integer integral = this.integralMapper.selectByQQ(messageInfo.getQq());
-                        try{integral = integral + 2;
-                        }catch (NullPointerException e){
-                            integral = 2;
-                        }
-                        this.integralMapper.integralByGroupId(messageInfo.getGroupId(),messageInfo.getName(),messageInfo.getQq(),integral);
                     }else replayInfo.setReplayMessage("抱歉博士，这个卡池不是您的呢，麻烦通知创建人吧");
                 }else replayInfo.setReplayMessage("博士，这里没有你要找的这个卡池呢，会不会在别的地方");
             }else replayInfo.setReplayMessage("对不起博士，我没找到这个名字的卡池呢");

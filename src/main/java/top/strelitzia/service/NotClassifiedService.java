@@ -1,12 +1,6 @@
 package top.strelitzia.service;
 
-import com.jacob.activeX.ActiveXComponent;
-import com.jacob.com.Dispatch;
-import com.jacob.com.Variant;
 import lombok.extern.slf4j.Slf4j;
-import net.mamoe.mirai.Bot;
-import net.mamoe.mirai.contact.ContactList;
-import net.mamoe.mirai.contact.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,9 +10,9 @@ import top.angelinaBot.model.EventEnum;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
 import top.angelinaBot.model.TextLine;
+import top.angelinaBot.util.AdminUtil;
 import top.angelinaBot.util.MiraiFrameUtil;
 import top.angelinaBot.util.SendMessageUtil;
-import top.angelinaBot.util.AdminUtil;
 import top.strelitzia.dao.AdminUserMapper;
 
 import java.io.File;
@@ -40,21 +34,22 @@ public class NotClassifiedService {
     private static volatile List<String> GroupInstance = null;
 
     @Value("${userConfig.ownerQQ}")
-    private String ownerQQ;
+    private String QQ;
 
-    @Value("${userConfig.testGroup}")
-    private List<String> testGroup;
-
-    public static String QQSetInstance(String ownerQQ){
+    public String QQSetInstance(){
         if (QQInstance == null) {
             synchronized (NotClassifiedService.class) {
                 if (QQInstance == null) {
-                    QQInstance = ownerQQ;
+                    QQInstance = this.QQ;
                 }
             }
         }
         return QQInstance;
     }
+
+    @Value("#{'${userConfig.testGroup}'.split(' ')}")
+    private List<String> testGroup;
+
     public List<String> GroupSetInstance(){
         if (GroupInstance == null) {
             synchronized (NotClassifiedService.class) {
@@ -75,6 +70,8 @@ public class NotClassifiedService {
                         "\n如果想要拥有一个自己的机器人，可以加入安洁莉娜克隆中心" +
                         "\n克隆中心群号：235917683");
                 replayInfo.setQuitTime(3);
+            }else {
+                replayInfo.setReplayMessage("已判断为测试群组，取消退群策略");
             }
         }else {
             replayInfo.setReplayMessage("大家好！新人琴柳，向您报道！"
@@ -94,6 +91,30 @@ public class NotClassifiedService {
         replayInfo.setReplayImg(new File("runFile/petpet/saiLeach.gif"));
         replayInfo.setRecallTime(30);
         replayInfo.setReplayMessage("这一次换我守在这里狞笑，您快带着大家分崩离析");
+        return replayInfo;
+
+    }
+    @AngelinaGroup(keyWords = {"暂停进群策略"}, description = "权限功能")
+    public ReplayInfo test(MessageInfo messageInfo){
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        if (AdminUtil.getAdmin(messageInfo.getQq())) {
+            close = false;
+            replayInfo.setReplayMessage("已关闭群组人数清查，持续时间五分钟，五分钟后将会自动再次开启群组人数清查");
+            sendMessageUtil.sendFriendMsg(replayInfo);
+            replayInfo.setReplayMessage(null);
+            new Thread(() -> {
+                try {
+                    Thread.sleep(300000);
+                } catch (InterruptedException e) {
+                    log.error(e.toString());
+                }
+                close = true;
+                replayInfo.setReplayMessage("已重新开启");
+            }).start();
+
+        }else {
+            replayInfo.setReplayMessage("您没有权限这样做");
+        }
         return replayInfo;
     }
 
@@ -120,19 +141,21 @@ public class NotClassifiedService {
     @AngelinaGroup(keyWords = {"贴贴","亲亲","抱抱","么么"}, description = "发送琴柳感语音", sort = "娱乐功能",funcClass = "大宝贝")
     public ReplayInfo newAudio(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        String folderPath = "runFile/Audio/qinLiuGan";
+        String folderPath = "runFile/Audio/qinLiuGan/official";
         File folder = new File(folderPath);
         File[] files = folder.listFiles();
         if(files == null){
             replayInfo.setReplayMessage("文件夹不存在，请检查文件夹");
-            return replayInfo;
+        }else {
+            if (folder.isDirectory() && files.length != 0) {
+                int selectAudioIndex = new SecureRandom().nextInt(files.length);
+                File selectFile = files[selectAudioIndex];
+                String oriFileName = selectFile.getAbsolutePath();
+                replayInfo.setReplayAudio(new File(oriFileName));
+            } else {
+                log.info("引用了一个空文件或空文件夹");
+            }
         }
-        if(folder.isDirectory() && files.length != 0) {
-            int selectAudioIndex = new SecureRandom().nextInt(files.length);
-            File selectFile = files[selectAudioIndex];
-            String oriFileName = selectFile.getAbsolutePath();
-            replayInfo.setReplayAudio(new File(oriFileName));
-        }else {log.info("引用了一个空文件或空文件夹");}
         return replayInfo;
     }
 
@@ -259,7 +282,7 @@ public class NotClassifiedService {
     @Autowired
     private AdminUserMapper adminUserMapper;
 
-    //@AngelinaFriend(keyWords = {"群组清查"})
+    /*@AngelinaFriend(keyWords = {"群组清查"})
     public ReplayInfo find(MessageInfo messageInfo) throws InterruptedException {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (AdminUtil.getAdmin(messageInfo.getQq())) {
@@ -297,6 +320,7 @@ public class NotClassifiedService {
         }
         return replayInfo;
     }
+    */
 
     @AngelinaGroup(keyWords = {"禁言"},description = "嘿嘿嘿")
     public ReplayInfo spoof(MessageInfo messageInfo) {
@@ -309,7 +333,7 @@ public class NotClassifiedService {
     public ReplayInfo feedback(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo();
         replayInfo.setGroupId(messageInfo.getGroupId());
-        replayInfo.setQq(Long.valueOf(QQSetInstance(this.ownerQQ)));
+        replayInfo.setQq(Long.valueOf(QQSetInstance()));
         replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(messageInfo.getGroupId()));
         if(messageInfo.getArgs().size()>1){
             String s = "琴柳收到一条反馈消息:\n" + messageInfo.getArgs().get(1) +
@@ -322,7 +346,8 @@ public class NotClassifiedService {
         replayInfo.setReplayMessage("反馈已发送");
         return replayInfo;
     }
-
+/*
+    //此功能依赖于jacob包，只能在windows系统使用这个功能，centos不支持
     @AngelinaGroup(keyWords = {"文字转语音"}, sort = "娱乐功能")
     public ReplayInfo word(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
@@ -372,4 +397,6 @@ public class NotClassifiedService {
             e.printStackTrace();
         }
     }
+
+ */
 }

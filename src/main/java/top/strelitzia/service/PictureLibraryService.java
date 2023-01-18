@@ -59,6 +59,10 @@ public class PictureLibraryService {
     @AngelinaGroup(keyWords = {"存图"}, description = "给图库存入图片，提供给好图功能使用", sort = "娱乐功能",funcClass = "好图分享")
     public ReplayInfo savePic(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        if (pictureLibraryMapper.selectBlack(messageInfo.getQq()).equals(1)){
+            replayInfo.setReplayMessage("您没有权限");
+            return replayInfo;
+        }
         if (saveGroupList.contains(messageInfo.getGroupId())){
             replayInfo.setReplayMessage("群组内已有群友正在存图，请等待结束后方可存入新的图片");
             return replayInfo;
@@ -136,6 +140,7 @@ public class PictureLibraryService {
                     }else if (s.equals("疑似")) {
                         picInfo.setType(0);
                         picInfo.setFormat(format);
+                        picInfo.setUploadQQ(recall.getQq());
                         pictureLibraryMapper.insectPicture(picInfo);
                         Integer id = pictureLibraryMapper.selectId();
                         String doubtPath = "runFile/doubt/"+picInfo.getFolder();
@@ -146,6 +151,7 @@ public class PictureLibraryService {
                     }else {
                         picInfo.setType(1);
                         picInfo.setFormat(format);
+                        picInfo.setUploadQQ(recall.getQq());
                         pictureLibraryMapper.insectPicture(picInfo);
                         Integer id = pictureLibraryMapper.selectId();
                         String passPath = "runFile/picture/"+picInfo.getFolder();
@@ -270,6 +276,8 @@ public class PictureLibraryService {
         return replayInfo;
     }
 
+
+
     @AngelinaGroup(keyWords = {"审核"},description = "对图库图片人工审核", sort = "娱乐功能",funcClass = "好图分享")
     public ReplayInfo checkPicture(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
@@ -282,7 +290,7 @@ public class PictureLibraryService {
         boolean audit = pictureLibraryMapper.selectAudit(messageInfo.getQq())>0;//审核组的成员
         boolean admin = AdminUtil.getAdmin(messageInfo.getQq());//顶级权限
         if(audit||admin){
-            replayInfo.setReplayMessage("审核开始，一个群组限制只能同时存在一个审核行为。请输入“通过”或“不通过”，如需停止输入“关闭审核”即可");
+            replayInfo.setReplayMessage("审核开始，一个群组限制只能同时存在一个审核行为。请输入“通过”，“不通过”或“标记”，如需停止输入“关闭审核”即可");
             sendMessageUtil.sendGroupMsg(replayInfo);
             replayInfo.setReplayMessage(null);
             while (true) {
@@ -301,7 +309,7 @@ public class PictureLibraryService {
                     public boolean callback(MessageInfo message) {
                         return message.getGroupId().equals(messageInfo.getGroupId()) &&
                                 message.getQq().equals(messageInfo.getQq()) &&
-                                (message.getText().equals("通过") || message.getText().equals("不通过") || message.getText().equals("关闭审核"));
+                                (message.getText().equals("通过") || message.getText().equals("不通过") || message.getText().equals("标记") || message.getText().equals("关闭审核"));
                     }
                 };
                 angelinaListener.setGroupId(messageInfo.getGroupId());
@@ -315,17 +323,22 @@ public class PictureLibraryService {
                 }
                 if(callBack.getText().equals("通过")){
                     pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),1);
-                    replayInfo.setReplayMessage("审核结果已收录，置入常规图库成功");
+                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，置入常规图库成功");
                     sendMessageUtil.sendGroupMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
                 }else if (callBack.getText().equals("不通过")){
                     if (file.delete()){
                         pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
-                        replayInfo.setReplayMessage("审核结果已收录，图片已被删除");
+                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，图片已被删除");
                     }else {
                         pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),2);
                         replayInfo.setReplayMessage("图片操作异常，已备注");
                     }
+                    sendMessageUtil.sendGroupMsg(replayInfo);
+                    replayInfo.setReplayMessage(null);
+                }else if(callBack.getText().equals("标记")){
+                    pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),999);
+                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"的图片已被标注");
                     sendMessageUtil.sendGroupMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
                 }else {
@@ -345,7 +358,7 @@ public class PictureLibraryService {
     public ReplayInfo checkDoubtPicture(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         boolean admin = AdminUtil.getAdmin(messageInfo.getQq());//顶级权限
-        replayInfo.setReplayMessage("审核开始。请输入“通过”或“不通过”，如需停止输入“关闭审核”即可");
+        replayInfo.setReplayMessage("审核开始。请输入“通过”，“不通过”或“标记”，如需停止输入“关闭审核”即可");
         sendMessageUtil.sendFriendMsg(replayInfo);
         replayInfo.setReplayMessage(null);
         if(admin){
@@ -368,7 +381,7 @@ public class PictureLibraryService {
                     @Override
                     public boolean callback(MessageInfo message) {
                         return message.getQq().equals(messageInfo.getQq()) &&
-                                (message.getText().equals("通过") || message.getText().equals("不通过") || message.getText().equals("关闭审核"));
+                                (message.getText().equals("通过") || message.getText().equals("不通过") || message.getText().equals("关闭审核") || message.getText().equals("标记") );
                     }
                 };
                 angelinaListener.setFunctionId("checkDoubt");
@@ -389,7 +402,7 @@ public class PictureLibraryService {
                         log.error(e.toString());
                     }
                     pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),1);
-                    replayInfo.setReplayMessage("审核结果已收录，置入常规图库成功");
+                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，置入常规图库成功");
                     sendMessageUtil.sendFriendMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
                 }else if (callBack.getText().equals("不通过")){
@@ -397,10 +410,15 @@ public class PictureLibraryService {
                     try {
                         Files.delete(source);
                         pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
-                        replayInfo.setReplayMessage("审核结果已收录，图片已被删除");
+                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，图片已被删除");
                     }catch (IOException e){
                         log.error(e.toString());
                     }
+                    sendMessageUtil.sendFriendMsg(replayInfo);
+                    replayInfo.setReplayMessage(null);
+                }else if(callBack.getText().equals("标记")){
+                    pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),999);
+                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"的图片已被标注");
                     sendMessageUtil.sendFriendMsg(replayInfo);
                     replayInfo.setReplayMessage(null);
                 }else {
@@ -410,6 +428,107 @@ public class PictureLibraryService {
             }
         }else{
             replayInfo.setReplayMessage("权限不足");
+        }
+        return replayInfo;
+    }
+
+    @AngelinaFriend(keyWords = {"删除图片"})
+    public ReplayInfo deletePicture(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        boolean audit = pictureLibraryMapper.selectAudit(messageInfo.getQq())>0;//审核组的成员
+        boolean admin = AdminUtil.getAdmin(messageInfo.getQq());//顶级权限
+        if(audit||admin){
+            if(messageInfo.getArgs().size()>1){
+                if (messageInfo.getArgs().get(1).matches("^[1-9]\\d*$")){
+                    Integer pictureId = Integer.valueOf(messageInfo.getArgs().get(1));
+                    PictureLibraryInfo picInfo = pictureLibraryMapper.selectPictureById(pictureId);
+                    String type;
+                    if(picInfo.getType().equals(0)){
+                        type = "doubt";
+                    }else {
+                        type = "picture";
+                    }
+                    pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
+                    String path = "runFile/" +type+ "/" +picInfo.getFolder()+ "/" +picInfo.getFolder()+ "-" +picInfo.getPictureId()+ "." +picInfo.getFormat();
+                    try {
+                        Files.delete(Paths.get(path));
+                        replayInfo.setReplayMessage("编号"+picInfo.getPictureId()+"图片已被删除");
+                    } catch (IOException e) {
+                        log.error(e.toString());
+                        replayInfo.setReplayMessage("编号"+picInfo.getPictureId()+"数据已被删除，但文件删除失败");
+                    }
+                }else {
+                    replayInfo.setReplayMessage("输入不符");
+                }
+            }else {
+                replayInfo.setReplayMessage("请输入查询的图片ID");
+            }
+        }
+        return replayInfo;
+    }
+
+    @AngelinaFriend(keyWords = {"查询上传者"})
+    public ReplayInfo inquireUploader(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        boolean audit = pictureLibraryMapper.selectAudit(messageInfo.getQq())>0;//审核组的成员
+        boolean admin = AdminUtil.getAdmin(messageInfo.getQq());//顶级权限
+        if(audit||admin){
+            if(messageInfo.getArgs().size()>1){
+                if (messageInfo.getArgs().get(1).matches("^[1-9]\\d*$")){
+                    Integer pictureId = Integer.valueOf(messageInfo.getArgs().get(1));
+                    Long qq = pictureLibraryMapper.selectUploadQQByPictureId(pictureId);
+                    replayInfo.setReplayMessage("该图片ID对应的上传者QQ为："+qq);
+                }else {
+                    replayInfo.setReplayMessage("输入不符");
+                }
+            }else {
+                replayInfo.setReplayMessage("请输入查询的图片ID");
+            }
+        }
+        return replayInfo;
+    }
+
+    @AngelinaFriend(keyWords = {"图库黑名单"})
+    public ReplayInfo blacklistUploader(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        boolean audit = pictureLibraryMapper.selectAudit(messageInfo.getQq()) > 0;//审核组的成员
+        boolean admin = AdminUtil.getAdmin(messageInfo.getQq());//顶级权限
+        if (audit || admin) {
+            if(messageInfo.getArgs().size()>2) {
+                if (messageInfo.getArgs().get(1).equals("添加")) {
+                    if (messageInfo.getArgs().get(2).matches("^[1-9]\\d*$")) {
+                        Long qq = Long.valueOf(messageInfo.getArgs().get(2));
+                        pictureLibraryMapper.insertBlack(qq);
+                        replayInfo.setReplayMessage("该人员已被加入黑名单");
+                    }else {
+                        replayInfo.setReplayMessage("输入不符");
+                    }
+                }else if(messageInfo.getArgs().get(1).equals("移除")){
+                    if (messageInfo.getArgs().get(2).matches("^[1-9]\\d*$")) {
+                        Long qq = Long.valueOf(messageInfo.getArgs().get(2));
+                        pictureLibraryMapper.deleteBlack(qq);
+                        replayInfo.setReplayMessage("该人员已被移除黑名单");
+                    }else {
+                        replayInfo.setReplayMessage("输入不符");
+                    }
+                }else if(messageInfo.getArgs().get(1).equals("查询")){
+                    if (messageInfo.getArgs().get(2).matches("^[1-9]\\d*$")) {
+                        Long qq = Long.valueOf(messageInfo.getArgs().get(2));
+                        Integer num = pictureLibraryMapper.selectBlack(qq);
+                        if(num>0){
+                            replayInfo.setReplayMessage("黑名单中存在该人员");
+                        }else {
+                            replayInfo.setReplayMessage("黑名单中不存在该人员");
+                        }
+                    }else {
+                        replayInfo.setReplayMessage("输入不符");
+                    }
+                }else {
+                    replayInfo.setReplayMessage("不存在该指令");
+                }
+            }else{
+                replayInfo.setReplayMessage("需输入操作和QQ号");
+            }
         }
         return replayInfo;
     }

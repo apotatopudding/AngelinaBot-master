@@ -6,6 +6,7 @@
         <result column="folder" property="folder" jdbcType="VARCHAR"/>
         <result column="picture_id" property="pictureId" jdbcType="INTEGER"/>
         <result column="format" property="format" jdbcType="VARCHAR"/>
+        <result column="upload_qq" property="uploadQQ" jdbcType="INTEGER"/>
     </resultMap>
 
     <select id="selectAllPictureByType" parameterType="java.lang.Integer" resultMap="BaseResultMap">
@@ -30,6 +31,15 @@
         LIMIT 1
     </select>
 
+    <select id="selectPictureById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+            folder, type, picture_id, format
+        FROM
+            a_picture_library
+        WHERE
+            picture_id = #{pictureId};
+    </select>
+
     <select id="selectFolderList" resultType="java.lang.String">
         SELECT
         folder
@@ -52,9 +62,9 @@
 
     <insert id="insectPicture" parameterType="top.strelitzia.model.PictureLibraryInfo">
         INSERT INTO
-        a_picture_library(folder, type, audit, format)
+        a_picture_library(folder, type, audit, format,upload_qq)
         VALUES
-        (#{folder}, #{type}, 0, #{format})
+        (#{folder}, #{type}, 0, #{format},#{uploadQQ})
     </insert>
 
     <select id="selectId" resultType="java.lang.Integer">
@@ -69,28 +79,33 @@
         DELETE FROM a_picture_library
         WHERE picture_id = #{pictureId}
     </delete>
+
+    <select id="selectUploadQQByPictureId" resultType="java.lang.Long">
+        SELECT upload_qq FROM a_picture_library WHERE picture_id = #{pictureId};
+    </select>
     
     <select id="selectAudit" parameterType="java.lang.Long" resultType="java.lang.Integer">
-        SELECT
-        count(qq)
-        FROM
-        a_picture_audit
-        WHERE
-        qq = #{qq}
+        SELECT count(qq) FROM a_picture_audit WHERE qq = #{qq} and class = 1;
+    </select>
+
+    <select id="selectBlack" parameterType="java.lang.Long" resultType="java.lang.Integer">
+        SELECT count(qq) FROM a_picture_audit WHERE qq = #{qq} and class = 0;
     </select>
 
     <insert id="insertAudit">
-        INSERT INTO
-        a_picture_audit(qq)
-        VALUES
-        (#{qq})
+        INSERT INTO a_picture_audit(qq,class) VALUES (#{qq},1);
+    </insert>
+
+    <insert id="insertBlack">
+        INSERT INTO a_picture_audit(qq,class) VALUES (#{qq},0);
     </insert>
 
     <delete id="deleteAudit">
-        DELETE FROM
-        a_picture_audit
-        WHERE
-        qq = #{qq}
+        DELETE FROM a_picture_audit WHERE qq = #{qq} and class = 1;
+    </delete>
+
+    <delete id="deleteBlack">
+        DELETE FROM a_picture_audit WHERE qq = #{qq} and class = 0;
     </delete>
 
 </mapper>

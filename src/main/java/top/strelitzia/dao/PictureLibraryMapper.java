@@ -14,6 +14,9 @@ public interface PictureLibraryMapper {
     //查询所有指定类型的未审核图片（审核专用）
     PictureLibraryInfo selectPictureWithoutCheckByType(Integer type);
 
+    //根据ID查询图片信息
+    PictureLibraryInfo selectPictureById(Integer pictureId);
+
     //查询文件夹列表
     List<String> selectFolderList();
 
@@ -30,12 +33,24 @@ public interface PictureLibraryMapper {
     //删除一张图片记录
     void deletePictureByPictureId(Integer pictureId);
 
+    //查询ID对应的上传者QQ
+    Long selectUploadQQByPictureId(Integer pictureId);
+
     //查找审核员
     Integer selectAudit(Long qq);
 
     //添加审核员
-    void insertAudit(Integer qq);
+    void insertAudit(Long qq);
 
     //删除审核员
-    void deleteAudit(Integer qq);
+    void deleteAudit(Long qq);
+
+    //查找存图黑名单
+    Integer selectBlack(Long qq);
+
+    //添加存图黑名单
+    void insertBlack(Long qq);
+
+    //删除存图黑名单
+    void deleteBlack(Long qq);
 }

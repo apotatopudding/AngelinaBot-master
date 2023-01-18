@@ -7,6 +7,8 @@ public class PictureLibraryInfo {
     private Integer audit;//0为未审核，1为已审核
     private String format;
 
+    private Long uploadQQ;
+
     public Integer getPictureId() { return pictureId; }
 
     public void setPictureId(Integer pictureId) { this.pictureId = pictureId; }
@@ -26,4 +28,12 @@ public class PictureLibraryInfo {
     public String getFormat() { return format; }
 
     public void setFormat(String format) { this.format = format; }
+
+    public Long getUploadQQ() {
+        return uploadQQ;
+    }
+
+    public void setUploadQQ(Long uploadQQ) {
+        this.uploadQQ = uploadQQ;
+    }
 }

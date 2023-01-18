@@ -9,6 +9,7 @@ import top.angelinaBot.container.AngelinaEventSource;
 import top.angelinaBot.container.AngelinaListener;
 import top.angelinaBot.model.MessageInfo;
 import top.angelinaBot.model.ReplayInfo;
+import top.angelinaBot.util.AdminUtil;
 import top.angelinaBot.util.SendMessageUtil;
 import top.strelitzia.dao.IntegralMapper;
 import top.strelitzia.model.TalkTallInfo;
@@ -140,7 +141,9 @@ public class TalkTallService {
                 }
                 //对结果去重，如果去重没有减少代表是顺子，继续循环扔，如果不是就关闭退出循环
                 Set<Integer> set = new HashSet<>(list);
-                if (set.size()!=6){
+                if (set.size() == 6){
+                    list = new ArrayList<>();
+                }else {
                     repetition = false;
                 }
             }
@@ -300,6 +303,20 @@ public class TalkTallService {
 
         }
         groupList.remove(messageInfo.getGroupId());
+        return replayInfo;
+    }
+
+    @AngelinaGroup(keyWords = {"关闭吹牛"},description = "吹牛游戏", sort = "娱乐功能",funcClass = "吹牛")
+    public ReplayInfo closeTalkTall(MessageInfo messageInfo){
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        boolean admin = AdminUtil.getAdmin(messageInfo.getQq());
+        if (messageInfo.getUserAdmin().getLevel()<1 && !admin){
+            replayInfo.setReplayMessage("您的权限不足");
+        }else {
+            AngelinaEventSource.remove(messageInfo.getGroupId());
+            groupList.remove(messageInfo.getGroupId());
+            replayInfo.setReplayMessage("移除成功");
+        }
         return replayInfo;
     }
 

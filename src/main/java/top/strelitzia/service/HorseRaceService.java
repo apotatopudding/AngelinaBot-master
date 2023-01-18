@@ -47,6 +47,8 @@ public class HorseRaceService {
         if (groupList.contains(messageInfo.getGroupId())){
             replayInfo.setReplayMessage("赛马比赛还未结束呢，耐心观看吧");
             return replayInfo;
+        }else {
+            groupList.add(messageInfo.getGroupId());
         }
         replayInfo.setReplayMessage("各位，精彩的赛马大赛就要开始了，有请各位选手登场！");
         //绘制当场比赛状态概率表
@@ -109,6 +111,7 @@ public class HorseRaceService {
                 //检查是否足够三个人，如不足则关闭
                 if(participantList.size()<3){
                     replayInfo.setReplayMessage("人数尚不足三人，本次赛马大赛关闭");
+                    groupList.remove(messageInfo.getGroupId());
                     return replayInfo;
                 }else {
                     replayInfo.setReplayMessage("等待时间超时，暂无人继续下注，比赛开始");

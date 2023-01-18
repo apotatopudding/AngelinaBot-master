@@ -42,13 +42,6 @@ public class test {
         return replayInfo;
     }
 
-    //@AngelinaGroup(keyWords = {"呼叫"}, description = "测试")
-    public ReplayInfo hujiao(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        replayInfo.setReplayMessage("杰哥今天寄了，琴柳在执勤，可以呼叫琴柳和稀音哦");
-        return replayInfo;
-    }
-
     @AngelinaGroup(keyWords = {"转换"}, description = "测试")
     public ReplayInfo changeFormat(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);

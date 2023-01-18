@@ -295,14 +295,14 @@ public class TicktacktoeService {
         try {
             File file1 = new File("runFile/ticktacktoe/new.png");
             Image img1 = ImageIO.read(file1).getScaledInstance(56, 56, Image.SCALE_DEFAULT);
-            textLine.addImage(img1,100,60,2,2);
+            textLine.addImage(img1,100,60,1,1);
             File file2 = new File("runFile/ticktacktoe/new2.png");
             Image img2 = ImageIO.read(file2).getScaledInstance(56, 56, Image.SCALE_DEFAULT);
-            textLine.addImage(img2,100,160,2,2);
+            textLine.addImage(img2,100,160,1,1);
             //InputStream pic = new ClassPathResource("/runFile/newPic.jpg").getInputStream();
             File file = new File("runFile/ticktacktoe/basePic.jpg");
             Image img = ImageIO.read(file).getScaledInstance(750, 750, Image.SCALE_DEFAULT);
-            textLine.addImage(img,100,350,10,10);
+            textLine.addImage(img,100,350,5,5);
         }catch (IOException e){
             e.printStackTrace();
         }
