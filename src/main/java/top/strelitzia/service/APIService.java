@@ -31,7 +31,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -51,10 +53,12 @@ public class APIService {
     @Autowired
     private NotClassifiedService not;
 
-    private static volatile String instance;
-
     @Value("${APIConfig.token}")
     private String token;
+
+    private Map<Long,Integer> lookWorldMap = new HashMap<>();
+
+    private static volatile String instance;
 
     public String tokenInstance(){
         if (instance == null) {
@@ -299,7 +303,8 @@ public class APIService {
     @AngelinaGroup(keyWords = {"每日看世界"}, sort = "订阅功能",funcClass = "每日看世界")
     public ReplayInfo lookWorldWord(MessageInfo messageInfo){
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        Integer time = lookWorldMapper.selectTimeByGroupId(messageInfo.getGroupId());
+        //注意，这里每天三次查询次数设置在了内存，如果重启bot，查询次数会被清空
+        Integer time = lookWorldMap.get(messageInfo.getGroupId());
         if (time == null) time = 0;
         if (time < 3) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
@@ -324,13 +329,16 @@ public class APIService {
                     log.error(e.toString());
                 }
             }
-            lookWorldMapper.insertTimeByGroupId(messageInfo.getGroupId());
+            lookWorldMap.put(messageInfo.getGroupId(),time+1);
         }else {
             replayInfo.setReplayMessage("当前群组今日查阅次数已经超过上限");
         }
         return replayInfo;
     }
 
+    public void cleanLookWorldTime(){
+        lookWorldMap = new HashMap<>();
+    }
 
     @AngelinaGroup(keyWords = {"历史上的今天"}, sort = "API功能")
     public ReplayInfo history(MessageInfo messageInfo){

@@ -80,6 +80,11 @@
         WHERE picture_id = #{pictureId}
     </delete>
 
+    <delete id="deleteSignPicture">
+        DELETE FROM a_picture_library
+        WHERE audit = 999
+    </delete>
+
     <select id="selectUploadQQByPictureId" resultType="java.lang.Long">
         SELECT upload_qq FROM a_picture_library WHERE picture_id = #{pictureId};
     </select>

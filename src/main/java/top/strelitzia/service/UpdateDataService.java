@@ -30,10 +30,15 @@ import top.strelitzia.util.FormatStringUtil;
 import java.io.*;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * @author strelitzia
@@ -76,13 +81,15 @@ public class UpdateDataService {
     @Autowired
     private AgentTagsMapper agentTagsMapper;
 
-//    private String url = "https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData@master/zh_CN/gamedata/";
+    //    private String url = "https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData@master/zh_CN/gamedata/";
 //    private String url = "https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/";
 //    private String url = "http://vivien8261.gitee.io/arknights-bot-resource/gamedata/";
     private final String url = "https://raw.fastgit.org/yuanyan3060/Arknights-Bot-Resource/master/";
 //    private final String url = "https://raw.githubusercontent.com/yuanyan3060/Arknights-Bot-Resource/main/";
 
-    /** 先判断版本是否相同→如果版本不同，开始更新→置位1→下载数据文件→置位0→下载完成→置位2→写入数据→置位0→写入完成 */
+    /**
+     * 先判断版本是否相同→如果版本不同，开始更新→置位1→下载数据文件→置位0→下载完成→置位2→写入数据→置位0→写入完成
+     */
     private static int updateStatus = 0;
 
     @AngelinaGroup(keyWords = {"更新"}, description = "尝试更新数据", sort = "权限功能")
@@ -102,7 +109,6 @@ public class UpdateDataService {
                 } else {
                     downloadInfo.setUseHost(false);
                 }
-                downloadInfo.setForce(false);
                 boolean finish = downloadDataFile(downloadInfo);
                 if (finish) {
                     replayInfo.setReplayMessage("更新完成");
@@ -135,7 +141,8 @@ public class UpdateDataService {
                 } else {
                     downloadInfo.setUseHost(false);
                 }
-                downloadInfo.setForce(true);
+                deleteAllFile(Paths.get("runFile/download"));
+                log.info("正在执行全量更新，旧数据文件已完成清理");
                 boolean finish = downloadDataFile(downloadInfo);
                 if (finish) {
                     replayInfo.setReplayMessage("更新完成");
@@ -143,35 +150,10 @@ public class UpdateDataService {
                     replayInfo.setReplayMessage("更新失败，请从后台日志查看更新情况");
                 }
             } else if (updateStatus == 1) {
-                replayInfo.setReplayMessage("正在下载数据文件中，请重启Bot后再试");
+                replayInfo.setReplayMessage("正在下载数据文件中");
             } else {
-                replayInfo.setReplayMessage("正在写入数据库中，请重启Bot后再试");
+                replayInfo.setReplayMessage("正在写入数据库中");
             }
-        }
-        return replayInfo;
-    }
-
-    @AngelinaGroup(keyWords = {"更新素材", "更新图片", "更新图标"}, description = "更新素材数据", sort = "权限功能")
-    @AngelinaFriend(keyWords = {"更新素材", "更新图片", "更新图标"}, description = "更新素材数据")
-    public ReplayInfo updateImgFile(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
-            replayInfo.setReplayMessage("您无更新权限");
-        }else {
-            DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
-            rebuildDatabase();
-            if(messageInfo.getArgs().size()>2){
-                downloadInfo.setHostname(messageInfo.getArgs().get(1));
-                downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
-                downloadInfo.setUseHost(true);
-            }else {
-                downloadInfo.setUseHost(false);
-            }
-            //            updateSkin();
-            updateItemIcon(downloadInfo);
-            updateOperatorPng(downloadInfo);
-            updateOperatorSkillPng(downloadInfo);
-            replayInfo.setReplayMessage("正在更新素材");
         }
         return replayInfo;
     }
@@ -182,13 +164,13 @@ public class UpdateDataService {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (!AdminUtil.getAdmin(messageInfo.getQq())) {
             replayInfo.setReplayMessage("您无更新权限");
-        }else {
+        } else {
             DownloadOneFileInfo downloadInfo = new DownloadOneFileInfo();
-            if(messageInfo.getArgs().size()>2){
+            if (messageInfo.getArgs().size() > 2) {
                 downloadInfo.setHostname(messageInfo.getArgs().get(1));
                 downloadInfo.setPort(Integer.parseInt(messageInfo.getArgs().get(2)));
                 downloadInfo.setUseHost(true);
-            }else {
+            } else {
                 downloadInfo.setUseHost(false);
             }
             updateOperatorVoice(downloadInfo);
@@ -197,128 +179,81 @@ public class UpdateDataService {
         return replayInfo;
     }
 
+//    @AngelinaGroup(keyWords = {"更新卡池"}, description = "更新卡池数据", sort = "权限功能")
+//    public ReplayInfo update(MessageInfo messageInfo) {
+//        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+//        if (!AdminUtil.getAdmin(messageInfo.getQq())) {
+//            replayInfo.setReplayMessage("您无更新权限");
+//        } else {
+//            updateGachaPoolInfo();
+//            replayInfo.setReplayMessage("更新卡池完成");
+//        }
+//        return replayInfo;
+//    }
+//
+//    private void updateGachaPoolInfo() {
+//        //获取卡池数据json
+//        JSONObject gachaPool = new JSONObject(getJsonStringFromFile("gacha_table.json"));
+//        log.info("提取卡池列表");
+//        JSONArray gachaPoolClient = gachaPool.getJSONArray("gachaPoolClient");
+//        for (Object pool : gachaPoolClient) {
+//            GachePoolInfo gachePoolInfo = new GachePoolInfo();
+//            gachePoolInfo.setGachaPoolId(((JSONObject) pool).getString("gachaPoolId"));
+//            gachePoolInfo.setGachaIndex(((JSONObject) pool).getInt("gachaIndex"));
+//            gachePoolInfo.setGachaPoolName(((JSONObject) pool).getString("gachaPoolName"));
+//            gachePoolInfo.setOpenTime(((JSONObject) pool).getInt("openTime"));
+//            gachePoolInfo.setEndTime(((JSONObject) pool).getInt("endTime"));
+//            gachePoolInfo.setGachaRuleType(((JSONObject) pool).getString("gachaRuleType"));
+//            updateMapper.insertGachePool(gachePoolInfo);
+//        }
+//    }
+
+    /**
+     * 数据文件下载判断，以最新数据判定是否需要下载数据文件
+     * 当需要下载时，如果存在符合条件的压缩包，则在后续更新中全部启动压缩包提取模式
+     * @param downloadInfo 下载信息，主要用于带入代理信息
+     * @return 更新结果
+     */
     public boolean downloadDataFile(DownloadOneFileInfo downloadInfo) {
-        downloadInfo.setUrl( url + "gamedata/excel/data_version.txt" );
+        downloadInfo.setUrl(url + "gamedata/excel/data_version.txt");
         String charKey;
         try {
             charKey = getJsonStringFromUrl(downloadInfo);
-        }catch (IOException e){
-            log.error(e.toString());
+        } catch (IOException e) {
+            log.error("在线dataVersion获取出现故障，问题原因为：" + e);
             return false;
         }
-        //Integer versionStatus = updateMapper.getVersionStatus();
-        File dataVersionFile = new File("runFile/download/data_version.txt");
+
         //确保状态是未正在下载
         if (updateStatus == 0) {
-            boolean canDownload = true;
+            File dataVersionFile = new File("runFile/download/data_version.txt");
+            boolean Download = true;
             //version文件不存在时，进行下载操作
             if (dataVersionFile.exists()) {
-                String dataVersion = getJsonStringFromFile("data_version.txt");
-                if (dataVersion == null) {
-                    log.info("数据文件不存在，准备下载");
-                }else {
+                try {
+                    String dataVersion = getJsonStringFromFile("data_version.txt");
                     //version文件存在且和线上version不相等时，进行下载操作
                     if (dataVersion.replace("\n", "").equals(charKey.replace("\n", ""))) {
                         log.info("线上版本和当前数据文件相同，无需下载");
-                        canDownload = false;
+                        Download = false;
                     } else {
                         log.info("线上版本和当前数据文件不同，准备下载");
                     }
+                } catch (NullPointerException e) {
+                    log.info("数据文件不存在，准备下载");
                 }
             } else {
                 log.info("数据文件不存在，准备下载");
             }
-            if (canDownload || downloadInfo.isForce()) {
+
+            if (Download) {
                 updateStatus = 1;
-                File dir = new File("runFile/download");
-                File skin = new File("runFile/skin");
-                File voice = new File("runFile/voice");
-                File operatorPng = new File("runFile/operatorPng");
-                File itemIcon = new File("runFile/itemIcon");
-                File avatar = new File("runFile/avatar");
-                File skill = new File("runFile/skill");
-                if (!skin.exists()) {
-                    skin.mkdirs();
-                }
-                if (!voice.exists()) {
-                    voice.mkdirs();
-                }
-                if (!operatorPng.exists()) {
-                    operatorPng.mkdirs();
-                }
-                if (!itemIcon.exists()) {
-                    itemIcon.mkdirs();
-                }
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-                if (!skill.exists()) {
-                    skill.mkdirs();
-                }
-                if (!avatar.exists()) {
-                    avatar.mkdirs();
-                }
-                for (File f : dir.listFiles()) {
-                    f.delete();
-                }
-                try {
-                    log.info("开始下载数据文件");
-                    downloadInfo.setSecond(1200);
-                    downloadInfo.setFileName("runFile/download/character_table.json");
-                    downloadInfo.setUrl( url + "gamedata/excel/character_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/gacha_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/gacha_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/skill_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/skill_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/building_data.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/building_data.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/handbook_info_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/handbook_info_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/charword_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/charword_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/char_patch_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/char_patch_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/item_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/item_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/skin_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/skin_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/battle_equip_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/battle_equip_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/uniequip_table.json");
-                    downloadInfo.setUrl( url+ "gamedata/excel/uniequip_table.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/enemy_database.json");
-                    downloadInfo.setUrl( url+ "gamedata/levels/enemydata/enemy_database.json");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setFileName("runFile/download/data_version.txt");
-                    downloadInfo.setUrl( url+ "gamedata/excel/data_version.txt");
-                    downloadOneFile(downloadInfo);
-                    downloadInfo.setSecond(600);
-                    downloadInfo.setFileName(null);
-                    downloadInfo.setUrl(null);
-                    log.info("数据文件下载完成");
-                    updateStatus = 0;
-                } catch (IOException e) {
-                    log.error("下载数据文件失败");
-                    log.error(e.toString());
-                    for (File f : dir.listFiles()) {
-                        f.delete();
-                    }
-                    updateStatus = 0;
+                downloadInfo.setPullZip(checkZipVersion(charKey));
+                if (!updateDateFile(downloadInfo)) {
                     return false;
                 }
             }
-            return updateAllData(downloadInfo);
+            return updateAllData(new DownloadOneFileInfo(downloadInfo));
         } else if (updateStatus == 1) {
             log.warn("数据文件正在下载中，无法重复下载，请等待文件下载完成");
             return false;
@@ -328,6 +263,238 @@ public class UpdateDataService {
         }
     }
 
+    /**
+     * 直接获取固定位置压缩包内的dataVersion数据与输入的版本数据匹配情况
+     * 压缩包内的数据不写为文件，直接以数据流形式在内存中对比
+     * @param charKey 需要对比的版本数据
+     * @return 是否匹配，true为匹配，false为不匹配
+     */
+    private boolean checkZipVersion(String charKey){
+        try {
+            String zipPath = "Arknights-Bot-Resource-main/gamedata/excel/data_version.txt";
+            String zipFileName = "Arknights-Bot-Resource-main.zip";
+            ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream("runFile/zipDateFile/" + zipFileName), Charset.forName("GBK"));
+            ZipEntry zipEntry;
+            String dataVersion = "";
+            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                if (zipEntry.getName().equals(zipPath)){
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(zipInputStream))){
+                        StringBuilder stringBuilder = new StringBuilder();
+                        String content;
+                        while ((content = br.readLine()) != null) {
+                            stringBuilder.append(content);
+                        }
+                        dataVersion = stringBuilder.toString();
+                    }
+                    log.info("已获取压缩包数据，正在进行版本对比");
+                    break;
+                }
+            }
+            zipInputStream.close();
+            if (dataVersion.replace("\n", "").equals(charKey.replace("\n", ""))) {
+                log.info("压缩包版本匹配当前版本号");
+                return true;
+            } else {
+                log.info("压缩包版本与当前版本不同，切换为云端下载");
+                return false;
+            }
+        } catch (IOException | NullPointerException e) {
+            log.info("未找到压缩包数据文件，尝试进行云端下载");
+            return false;
+        }
+    }
+
+    /**
+     * 尝试寻找zip文件并提取所需文件
+     * 提供两种提取方式，一种是文件夹方式提取，另一种是单独提取文件
+     *
+     * @param single  是否使用单独提取
+     * @param takeMap 提取文件表
+     *                当模式为单独提取时，key为zip文件目录，value为runFile文件目录\n
+     *                当模式为文件夹提取时，key为zip文件夹目录，value为runFile文件夹目录
+     * @throws IOException 抛出文件提取失败信息
+     */
+    private void pullFromZipFile(boolean single, Map<String, String> takeMap) throws IOException {
+        String zipFileName = "Arknights-Bot-Resource-main.zip";
+        ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream("runFile/zipDateFile/" + zipFileName), Charset.forName("GBK"));
+        ZipEntry zipEntry;
+        if (single) {
+            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                if (takeMap.containsKey(zipEntry.getName())) {
+                    String filePath = takeMap.get(zipEntry.getName());
+                    try (FileOutputStream f = new FileOutputStream(filePath)) {
+                        // 提取该数据文件到指定目录
+                        f.write(zipInputStream.readAllBytes());
+                    }
+                    takeMap.remove(zipEntry.getName());
+                }
+                if (takeMap.size() == 0) return;
+            }
+        } else {
+            boolean download = false;
+            //用于保存正在读取的zip文件夹目录
+            String currentFolder = "";
+            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
+                if (download && !zipEntry.getName().contains(currentFolder)) {
+                    download = false;
+                    takeMap.remove(currentFolder);
+                }
+                if (download) {
+                    //读取截断到/后的文件名字
+                    String fileName = zipEntry.getName().substring(zipEntry.getName().lastIndexOf("/") + 1);
+                    String filePath = takeMap.get(currentFolder) + fileName;
+                    try (FileOutputStream f = new FileOutputStream(filePath)) {
+                        // 提取该数据文件到指定目录
+                        f.write(zipInputStream.readAllBytes());
+                    }
+                }
+                if (!download && takeMap.containsKey(zipEntry.getName())) {
+                    download = true;
+                    currentFolder = zipEntry.getName();
+                }
+            }
+        }
+    }
+
+    /**
+     * 数据文件的清理和下载任务清单派发节点
+     *
+     * @param downloadInfo 获取是否启用代理的代理信息
+     * @return 下载是否成功
+     */
+    private boolean updateDateFile(DownloadOneFileInfo downloadInfo) {
+        //文件夹表
+        List<String> directoryList = Arrays.asList(
+                "download",
+                "skin",
+                "voice",
+                "operatorPng",
+                "itemIcon",
+                "avatar",
+                "skill");
+        for (String directoryName : directoryList) {
+            Path path = Paths.get("runFile/" + directoryName);
+            if (!Files.exists(path)) {
+                try {
+                    Files.createDirectories(path);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+            if (directoryName.equals("download")) {
+                deleteAllFile(path);
+                log.info("旧数据文件已完成清理");
+            }
+        }
+
+        //数据文件表
+        Map<String, String> fileOfDirectory = new HashMap<>() {{
+            put("character_table.json", "excel");
+            put("gacha_table.json", "excel");
+            put("skill_table.json", "excel");
+            put("building_data.json", "excel");
+            put("handbook_info_table.json", "excel");
+            put("charword_table.json", "excel");
+            put("char_patch_table.json", "excel");
+            put("item_table.json", "excel");
+            put("skin_table.json", "excel");
+            put("battle_equip_table.json", "excel");
+            put("uniequip_table.json", "excel");
+            put("enemy_database.json", "levels/enemydata");
+        }};
+
+        if (downloadInfo.isPullZip()) {
+            String zipHeader = "Arknights-Bot-Resource-main/gamedata/";
+            String downloadHeader = "runFile/download/";
+            Map<String,String> takeMap = new HashMap<>();
+            for (String fileName : fileOfDirectory.keySet()){
+                takeMap.put(zipHeader + fileOfDirectory.get(fileName) + "/" + fileName, downloadHeader + fileName);
+            }
+            takeMap.put(zipHeader + "excel/data_version.txt", downloadHeader + "data_version.txt");
+            try {
+                pullFromZipFile(true,takeMap);
+                updateStatus = 0;
+                log.error("压缩包数据文件提取完成");
+                return true;
+            } catch (IOException e) {
+                log.error("拉取出现错误，失败原因："+ e +"\n重新尝试下载");
+            }
+        }
+        boolean result = true;
+        log.info("开始下载数据文件");
+        String fileName = "";
+        try {
+            for (String s : fileOfDirectory.keySet()) {
+                fileName = s;
+                downloadInfo.setSecond(1200);
+                downloadInfo.setFileName("runFile/download/" + fileName);
+                downloadInfo.setUrl(url + "gamedata/" + fileOfDirectory.get(fileName) + "/" + fileName);
+                downloadOneFile(downloadInfo);
+            }
+        } catch (IOException e) {
+            result = false;
+            log.error("下载数据文件{}失败，请单独手动替换文件，问题原因：\n" + e, fileName);
+            Path path = Paths.get("runFile/download/" + fileName);
+            if (Files.exists(path)) {
+                try {
+                    Files.delete(path);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        if (result) {
+            Path path = Paths.get("runFile/download/data_version.txt");
+            downloadInfo.setFileName(path.toString());
+            downloadInfo.setUrl(url + "gamedata/excel/data_version.txt");
+            try {
+                downloadOneFile(downloadInfo);
+                log.info("数据文件下载完成");
+                updateStatus = 0;
+                return true;
+            } catch (IOException e) {
+                log.error("下载data_version失败，请单独手动替换文件，问题原因：\n" + e);
+                if (Files.exists(path)) {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException ex) {
+                        log.error(ex.toString());
+                    }
+                }
+                updateStatus = 0;
+                return false;
+            }
+        }else {
+            updateStatus = 0;
+            return false;
+        }
+    }
+
+    /**
+     * 删除目标path下所有文件
+     * @param path 目标path
+     */
+    private void deleteAllFile(Path path){
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<>() {
+                // 遍历删除文件
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 文件下载方法，先检索文件是否有存在，如果存在将跳过下载
+     * @param downloadInfo 带入所有封装的下载信息进行下载
+     * @throws IOException 下载IO错误报错
+     */
     private void downloadOneFile(DownloadOneFileInfo downloadInfo) throws IOException {
         File file = new File(downloadInfo.getFileName());
         if (file.exists()) {
@@ -356,55 +523,103 @@ public class UpdateDataService {
             //如果返回状态不是200，比如404（页面不存在）等，根据情况做处理
             log.error("下载{}文件失败"+response.getStatusLine().getStatusCode(), downloadInfo.getFileName());
         }
-/*
-        URL u = new URL(downloadInfo.getUrl());
-        HttpURLConnection httpUrl;
-        if (downloadInfo.isUseHost()) {
-            Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(downloadInfo.getHostname(), downloadInfo.getPort()));
-            httpUrl = (HttpURLConnection) u.openConnection(proxy);
-        }else {
-            httpUrl = (HttpURLConnection) u.openConnection();
-        }
-        //5分钟超时时间
-        httpUrl.setConnectTimeout(downloadInfo.getSecond()*1000);
-        httpUrl.setReadTimeout(downloadInfo.getSecond()*1000);
-
-        httpUrl.connect();
-        try (InputStream is = httpUrl.getInputStream();FileOutputStream fs = new FileOutputStream(downloadInfo.getFileName())){
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = is.read(buffer)) != -1) {
-                fs.write(buffer, 0, len);
-            }
-            log.info("下载{}文件成功", downloadInfo.getFileName());
-        } catch (IOException e) {
-            log.error("下载{}文件失败", downloadInfo.getFileName());
-            log.error(e.toString());
-            throw e;
-        }
-        httpUrl.disconnect();
-*/
     }
 
+    /**
+     * 发送url的get请求获取结果json字符串
+     * @param downloadInfo 相关信息
+     * @return 返回结果String
+     */
+    public String getJsonStringFromUrl(DownloadOneFileInfo downloadInfo) throws IOException {
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        CloseableHttpResponse response;
+        HttpGet httpGet = new HttpGet(downloadInfo.getUrl());
+//        httpGet.setHeader("User-Agent", "PostmanRuntime/7.26.8");
+//        httpGet.setHeader("Authorization", "2");
+//        httpGet.setHeader("Host", "andata.somedata.top");
+        if (downloadInfo.isUseHost()) {
+            //如果要使用代理，加上代理服务器信息
+            HttpHost httpHost = new HttpHost(downloadInfo.getHostname(), downloadInfo.getPort());
+            RequestConfig config = RequestConfig.custom().setProxy(httpHost).build();
+            httpGet.setConfig(config);
+        }
+        response = httpclient.execute(httpGet);
+        HttpEntity httpEntity = response.getEntity();//获取响应文本体
+        return EntityUtils.toString(httpEntity, "utf-8");
+//        HttpHeaders httpHeaders = new HttpHeaders();
+//        httpHeaders.set("User-Agent", "PostmanRuntime/7.26.8");
+//        httpHeaders.set("Authorization", "2");
+//        httpHeaders.set("Host", "andata.somedata.top");
+//        HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
+//        String s = null;
+//        try {
+//            s = restTemplate
+//                    .exchange(url, HttpMethod.GET, httpEntity, String.class).getBody();
+//        } catch (Exception ignored) {
+//
+//        }
+//        return s;
+    }
+
+    /**
+     * 读取文件的内容字符串
+     * @param fileName url
+     * @return 返回结果String
+     */
+    public String getJsonStringFromFile(String fileName) {
+        Path path = Paths.get("runFile/download/" + fileName);
+        try {
+            return Files.readString(path);
+        } catch (IOException e) {
+            return null;
+        }
+//        File file = new File("runFile/download/" + fileName);
+//        StringBuilder lastStr = new StringBuilder();
+//        try (BufferedReader reader = new BufferedReader(new FileReader(file))){
+//            // System.out.println("以行为单位读取文件内容，一次读一整行：");
+//            String tempString;
+//            // 一次读入一行，直到读入null为文件结束
+//            while ((tempString = reader.readLine()) != null) {
+//                lastStr.append(tempString);
+//            }
+//        } catch (IOException e) {
+//            log.warn("读取错误：" + e);
+//            return null;
+//        }
+//        return lastStr.toString();
+    }
+
+    /**
+     * 更新总支，分别调用所有的子更新方法
+     * @param downloadOneFileInfo 封装更新信息，传入代理部分参数
+     * @return 更新是否成功
+     */
     public boolean updateAllData(DownloadOneFileInfo downloadOneFileInfo) {
         String charKey = getJsonStringFromFile("data_version.txt");
-        if (charKey == null) return false;
+        if (charKey == null) {
+            return false;
+        }
         String dataVersion = updateMapper.getVersion();
-        if (dataVersion == null) updateMapper.insertVersion();//如果不存在，手动更新一个0出来避免后续无法更新数据库的版本号
-        //Integer versionStatus = updateMapper.getVersionStatus();
+        if (dataVersion == null) {
+            updateMapper.insertVersion();//如果不存在，手动更新一个0出来避免后续无法更新数据库的版本号
+        }
         try {
             if (updateStatus == 0) {
                 if (!charKey.equals(dataVersion)) {
                     log.info("数据库和数据文件版本不同，开始更新全部数据");
+                    if (!downloadOneFileInfo.isPullZip() || checkZipVersion(charKey)){
+                        downloadOneFileInfo.setPullZip(true);
+                        log.info("压缩包与数据文件版本匹配，尝试从压缩包提取资料");
+                    }
                     updateStatus = 2;
-                    //updateMapper.doingUpdateVersion();
-                    //清理干员数据(因部分召唤物无char_id，不方便进行增量更新)
-                    log.info("清理干员数据");
-                    updateMapper.clearOperatorData();
+//                    //清理干员数据(因部分召唤物无char_id，不方便进行增量更新)
+//                    log.info("清理干员数据");
+//                    updateMapper.clearUnknownData();
                     updateAllOperator();
+                    updateOperatorEquipByJson();
                     updateAllEnemy();
                     updateMapAndItem();
-//                    updateSkin(downloadOneFileInfo);
+                    updateSkin(downloadOneFileInfo);
                     updateItemIcon(downloadOneFileInfo);
                     updateOperatorPng(downloadOneFileInfo);
                     updateOperatorSkillPng(downloadOneFileInfo);
@@ -425,87 +640,119 @@ public class UpdateDataService {
             updateStatus = 0;
             log.warn("json解析出现错误，请检查json格式与完整性");
             e.printStackTrace();
+            return false;
         }
         return true;
     }
+    private static List<String> gachaCharList;
 
     /**
-     * 全量更新干员相关信息
+     * 公招tag字段注入数组
+     * 如已更新，则读取已更新的值，如未更新，更新tag数组
+     * @return 已更新的tag数组
      */
-    public void updateAllOperator() {
-        //获取全部干员基础数据
-        JSONObject operatorObj = new JSONObject(getJsonStringFromFile("character_table.json"));
-        //获取游戏公招描述数据
-        log.info("更新公招描述数据");
-        String recruit = new JSONObject(getJsonStringFromFile("gacha_table.json")).getString("recruitDetail");
-        Pattern pattern = Pattern.compile("<(.*?)>");
-        Matcher matcher = pattern.matcher(recruit);
-        String replaceAll = matcher.replaceAll("").replace(" ","");
-        String[] split = replaceAll.split("\n");
-        //解析出全部的公招干员
-        List<String> gachaCharList = new ArrayList<>();
-        for (String s : split) {
-            if (s.startsWith("★")) {
-                String[] chars = s.replace("★", "").replace("\\n", "").split("/");
-                gachaCharList.addAll(Arrays.asList(chars));
+    private List<String> getGachaCharList(){
+        if (gachaCharList == null) {
+            //获取游戏公招描述部分以得到一个含有所有公招干员的表
+            String recruit = new JSONObject(getJsonStringFromFile("gacha_table.json")).getString("recruitDetail");
+            Pattern pattern = Pattern.compile("<(.*?)>");//此正则匹配xml格式的value
+            Matcher matcher = pattern.matcher(recruit);
+            String replaceAll = matcher.replaceAll("").replace(" ", "");
+            String[] split = replaceAll.split("\n");
+            //解析出全部的公招干员
+            gachaCharList = new ArrayList<>();
+            for (String s : split) {
+                if (s.startsWith("★")) {
+                    String[] chars = s.replace("★", "").replace("\\n", "").split("/");
+                    gachaCharList.addAll(Arrays.asList(chars));
+                }
             }
         }
-        //获取全部干员技能数据
-        log.info("更新全部干员技能数据");
-        JSONObject skillObj = new JSONObject(getJsonStringFromFile("skill_table.json"));
-        //获取全部基建技能数据
-        log.info("更新全部基建技能数据");
-        JSONObject buildingObj = new JSONObject(getJsonStringFromFile("building_data.json"));
+        return gachaCharList;
+    }
+
+    /**
+     * 更新所有干员数据登记到数据库中
+     * 由于阿米娅的干员数据位于另一个json中，利用写入与遍历单独更新
+     * 先通过更新基础数据，得到一个自增id
+     * 以此自增id，分别更新干员的档案数据与cv配音数据
+     * 召唤物只更新基础数据，并另置表为其更新
+     */
+    private void updateAllOperator(){
         //获取全部干员档案数据
-        log.info("更新全部干员档案数据");
-        JSONObject infoTableObj = new JSONObject(getJsonStringFromFile("handbook_info_table.json")).getJSONObject("handbookDict");
+        JSONObject infoTableJson = new JSONObject(getJsonStringFromFile("handbook_info_table.json")).getJSONObject("handbookDict");
+        //获取全部干员技能数据
+        JSONObject skillJson = new JSONObject(getJsonStringFromFile("skill_table.json"));
+        //获取全部基建技能数据
+        JSONObject buildingJson = new JSONObject(getJsonStringFromFile("building_data.json"));
         //获取配音演员档案数据
-        JSONObject CVNameObj = new JSONObject(getJsonStringFromFile("charword_table.json")).getJSONObject("voiceLangDict");
-        log.info("更新全部干员基础数据");
-        Iterator<String> keys = operatorObj.keys();
-        while (keys.hasNext()){
-            String charId = keys.next();
-            JSONObject operator = operatorObj.getJSONObject(charId);
+        JSONObject CVNameJson = new JSONObject(getJsonStringFromFile("charword_table.json")).getJSONObject("voiceLangDict");
 
-            String name = operator.getString("name").trim();
-            // 判断干员名是否存在公招描述中
-            if (gachaCharList.contains(name)) {
-                updateOperatorTag(operator);
-            }
+        //分别获取全部干员基础数据与异格阿米娅干员基础数据
+        List<JSONObject> operatorJsonList = new LinkedList<>(){{
+            add(new JSONObject(getJsonStringFromFile("character_table.json")));
+            add(new JSONObject(getJsonStringFromFile("char_patch_table.json")).getJSONObject("patchChars"));
+        }};
 
-            Integer operatorId = updateOperatorByJson(charId, operator, skillObj, buildingObj);
+        for (JSONObject operatorJson : operatorJsonList) {
+            List<String> list = getGachaCharList();
+            //利用迭代器依次取出干员信息
+            for (Iterator<String> keys = operatorJson.keys(); keys.hasNext(); ) {
+                String charId = keys.next();
+                JSONObject operatorInfo = operatorJson.getJSONObject(charId);
+                //鹰角坏事做尽！这里的null是个object的null值，不可直接以"== NULL"判断
+                boolean isOperator = operatorInfo.get("itemObtainApproach") instanceof String;
+                Integer id = operatorInfoMapper.getOperatorIdByChar(charId);
+                if (id == null) {
+                    id = operatorInfoMapper.getSummonerIdByChar(charId);
+                    if (id != null) {
+                        log.info("特殊召唤物{}已存在", charId);
+                        continue;
+                    }
+                }else {
+                    log.info("干员{}已存在", charId);
+                    continue;
+                }
 
-            if (infoTableObj.has(charId)) {
-                JSONObject jsonObject = infoTableObj.getJSONObject(charId);
-                JSONObject jsonObject1 = CVNameObj.getJSONObject(charId);
-                updateOperatorInfoById(charId, operatorId, jsonObject);
-                updateDubberInfoById(operatorId,jsonObject1);
+                String name;
+                if (isOperator) {
+//                  置入干员表
+                    Integer operatorId = updateOperatorByJson(charId, operatorInfo, skillJson, buildingJson);
+                    String tempCharId;//由于升变阿米娅没有专用档案，改用阿米娅的ID去获取升变阿米娅的档案
+                    if (charId.equals("char_1001_amiya2")) {
+                        name = "近卫阿米娅";
+                        tempCharId = "char_002_amiya";
+                    } else {
+                        name = operatorInfo.getString("name").trim();
+                        tempCharId = charId;
+                    }
+                    JSONObject jsonObject = infoTableJson.getJSONObject(tempCharId);
+                    JSONObject jsonObject1 = CVNameJson.getJSONObject(charId);
+                    updateOperatorInfoById(charId, operatorId, jsonObject);
+                    updateDubberInfoById(operatorId, jsonObject1);
+                    // 判断干员名是否存在公招描述中
+                    if (list.contains(name)) {
+                        updateOperatorTag(charId, operatorInfo);
+                    }
+                }else {
+//                  置入召唤物列表
+                    Integer operatorId = updateOperatorInfo(false, charId, operatorInfo);
+                    updatePanelData(false, operatorId, operatorInfo);
+
+                }
             }
         }
-        //更新模组信息
-        updateOperatorEquipByJson();
-
-        //近卫兔兔单独处理
-        JSONObject amiya2Json = new JSONObject(getJsonStringFromFile("char_patch_table.json")).getJSONObject("patchChars").getJSONObject("char_1001_amiya2");
-        Integer operatorId = updateOperatorByJson("char_1001_amiya2", amiya2Json, skillObj, buildingObj);
-        JSONObject amiyaInfo = infoTableObj.getJSONObject("char_002_amiya");
-        JSONObject amiyaCV = CVNameObj.getJSONObject("char_002_amiya");
-        updateOperatorInfoById("char_1001_amiya2", operatorId, amiyaInfo);
-        updateDubberInfoById(operatorId,amiyaCV);
-
         log.info("干员数据更新完成");
     }
 
     /**
      * 插入一条干员基础信息（档案、画师）
-     *
      * @param charId  干员char_id
      * @param operatorId 数据库中的干员Id
      */
     private void updateOperatorInfoById(String charId, Integer operatorId, JSONObject infoJsonObj) {
         OperatorBasicInfo operatorBasicInfo = new OperatorBasicInfo();
         operatorBasicInfo.setOperatorId(operatorId);
-        operatorBasicInfo.setCharId(charId);
         operatorBasicInfo.setDrawName(takeDrawName(charId));
         JSONArray storyTextAudio = infoJsonObj.getJSONArray("storyTextAudio");
         for (int i = 0; i < storyTextAudio.length(); i++) {
@@ -563,8 +810,8 @@ public class UpdateDataService {
                 case "档案资料四" -> operatorBasicInfo.setArchives4(storyText);
                 case "晋升记录", "晋升资料" -> operatorBasicInfo.setPromotionInfo(storyText);
             }
-            updateMapper.updateOperatorInfo(operatorBasicInfo);
         }
+        updateMapper.updateOperatorInfo(operatorBasicInfo);
     }
 
     /**
@@ -592,7 +839,6 @@ public class UpdateDataService {
 
     /**
      *  插入干员配音信息
-     *
      * @param operatorId 数据库中的干员Id
      * @param CVNameJsonObj 配音部分的JSON
      */
@@ -614,34 +860,35 @@ public class UpdateDataService {
     }
 
     /**
-     * 获取干员的标签tag
-     * @param operator 干员Json数据
+     * 从干员信息中获取单个干员的标签tag并按名字更新到数据库中
+     * @param charId 干员的charId编号
+     * @param operator character_table中干员基础信息部分解析数据
      */
-    private void updateOperatorTag(JSONObject operator) {
+    private void updateOperatorTag(String charId,JSONObject operator) {
         String name = operator.getString("name");
         List<String> agentTagsInfos = agentTagsMapper.selectAgentNameAll();
         if (agentTagsInfos.contains(name)) {
             log.info("干员{}已有公招tag", name);
             return;
         }
-        JSONArray tags = operator.getJSONArray("tagList");
-        int rarity = operator.getInt("rarity") + 1;
-        StringBuilder position = new StringBuilder(operator.getString("position").equals("MELEE") ? "近战位" : "远程位");
 
+        StringBuilder position = new StringBuilder();
+        switch (operator.getString("position")){
+            case "MELEE" -> position.append("近战位");
+            case "RANGED" -> position.append("远程位");
+        }
+
+        JSONArray tags = operator.getJSONArray("tagList");
         for (int i = 0; i < tags.length(); i++) {
             position.append(",").append(tags.getString(i));
         }
 
-        if (rarity == 5) {
-            position.append(",资深干员");
-        } else if (rarity == 6) {
-            position.append(",高级资深干员");
-        } else if (rarity == 1)
-        {
-            position.append(",支援机械");
+        int rarity = operator.getInt("rarity") + 1;
+        switch (rarity){
+            case 1 -> position.append(",").append("支援机械");
+            case 5 -> position.append(",").append("资深干员");
+            case 6 -> position.append(",").append("高级资深干员");
         }
-
-        String profession = operator.getString("profession");
 
         Map<String, String> operatorClass = new HashMap<>(8);
         operatorClass.put("PIONEER", "先锋干员");
@@ -653,9 +900,10 @@ public class UpdateDataService {
         operatorClass.put("MEDIC", "医疗干员");
         operatorClass.put("SPECIAL", "特种干员");
 
+        String profession = operator.getString("profession");
         position.append(",").append(operatorClass.get(profession));
 
-        updateMapper.updateTags(name, rarity, position.toString());
+        updateMapper.insertTags(charId, name, rarity, position.toString());
         log.info("{}干员tag信息更新成功", name);
     }
 
@@ -829,48 +1077,160 @@ public class UpdateDataService {
     }
 
     /**
-     * 增量更新皮肤信息
+     * 增量获取立绘图
+     * 当压缩包版本检查通过时直接从压缩包获取全部立绘
+     * 当压缩包版本检查没通过时设置下载信息进行下载
+     * @param downloadInfo 预封装下载信息
      */
     public void updateSkin(DownloadOneFileInfo downloadInfo) {
-        log.info("拉取时装数据");
-        JSONObject skinJson = new JSONObject(getJsonStringFromFile("skin_table.json")).getJSONObject("charSkins");
-        //皮肤只需要增量更新
-        List<String> skinNames = skinInfoMapper.selectAllNames();
+        log.info("开始拉取时装数据");
+        if (downloadInfo.isPullZip()) {
+            Map<String, String> map = new HashMap<>() {{
+                put("Arknights-Bot-Resource-main/skin/", "runFile/skin/");
+            }};
+            try {
+                log.info("正在尝试从压缩包中拉取");
+                pullFromZipFile(false, map);
+                log.info("时装立绘拉取完成，进行数据库写入");
+            } catch (IOException e) {
+                downloadInfo.setPullZip(false);
+                log.error("拉取出现错误，失败原因："+ e + "\n尝试下载");
+            }
+        }
+        JSONObject skinJson = new JSONObject(getJsonStringFromFile("skin_table.json"));
 
-        Iterator<String> keys = skinJson.keys();
+        JSONObject charSkins = skinJson.getJSONObject("charSkins");
+        //立绘只需要增量更新
+        List<String> skinIdList = skinInfoMapper.selectAllSkinId();
+        Iterator<String> keys = charSkins.keys();
         while (keys.hasNext()) {
-            JSONObject skinObj = skinJson.getJSONObject(keys.next());
-            if(skinObj.getJSONObject("displaySkin").get("skinName") instanceof String) {
-                String name = skinObj.getJSONObject("displaySkin").getString("skinName");
-                if (!skinNames.contains(name)) {
-                    log.info("新增时装：" + name);
-                    SkinInfo skinInfo = new SkinInfo();
-                    skinInfo.setSkinName(name);
-                    skinInfo.setDialog(skinObj.getJSONObject("displaySkin").getString("dialog"));
-                    skinInfo.setDrawerName(skinObj.getJSONObject("displaySkin").getString("drawerName"));
-                    skinInfo.setOperatorId(skinObj.getString("charId"));
-                    skinInfo.setSkinGroupName(skinObj.getJSONObject("displaySkin").getString("skinGroupName"));
-                    String avatarId = skinObj.getString("avatarId");
-                    String[] split = avatarId.split("#");
-                    try {
-                        String fileName = "runFile/skin/" + split[0] + "_" + split[1] + ".png";
+            String skinId = keys.next();
+            if (skinIdList.contains(skinId)){
+                log.info("id为{}的时装已存在，跳过拉取",skinId);
+                continue;
+            }
+            JSONObject singleSkin = charSkins.getJSONObject(skinId);
+            //获取json中定义的skinId，开头为char是干员，召唤物和活动立绘缺失太多，跳过获取
+            if (skinId.startsWith("char")){
+                //获取皮肤对应的干员charId
+                String charId = singleSkin.getString("charId");
+
+                //以charId返回查询自增Id和名字，并创建初始封装
+                SkinInfo skinInfo = skinInfoMapper.getOperatorInfoByChar(charId);
+
+                if (skinInfo == null){
+                    //如果干员找不到，就去特招找
+                    skinInfo = skinInfoMapper.getSummonerInfoByChar(charId);
+                    skinInfo.setType(1);
+                }
+
+                //通过skinId处理获取到实际的文件名字
+                String skinFile;
+                if (skinId.contains("@")){
+                    skinFile = skinId.replace("@","_") + "b.png";
+                }else {
+                    skinFile = skinId.replace("#","_") + "b.png";
+                }
+
+                JSONObject displaySkin = singleSkin.getJSONObject("displaySkin");
+                //获取皮肤名字，防止皮肤名字为null情况做归属判断，此处出现的null为object格式，不可用"=="null判断
+                String skinName;
+                if(displaySkin.get("skinName") instanceof String) {
+                    skinName = displaySkin.getString("skinName");
+                }else {
+                    int sortId = displaySkin.getInt("sortId");
+                    switch (sortId){
+                        case -3 -> skinName = "干员" + skinInfo.getOperatorName() + "的默认服装";
+                        case -2 -> skinName = "干员" + skinInfo.getOperatorName() + "精英化一级时的默认服装";
+                        case -1 -> skinName = "干员" + skinInfo.getOperatorName() + "精英化二级时的默认服装";
+                        default -> {
+                            skinName = "unknown";
+                            log.error("干员服装类别获取错误，服装id为{}，请提供给开发者修复",charId);
+                        }
+                    }
+                }
+                //获取画师表，以"/"分割，结尾最后一个"/"记得删掉
+                JSONArray drawerList;
+                StringBuilder drawer = new StringBuilder();
+                Object drawerObj = displaySkin.get("drawerList");
+                if(drawerObj instanceof JSONArray){
+                    drawerList = displaySkin.getJSONArray("drawerList");
+                    for (Object s : drawerList) {
+                        drawer.append(s).append("/");
+                    }
+                    drawer.deleteCharAt(drawer.length()-1);
+                }else {
+                    drawer.append("unknown");
+                }
+                //非默认服装content会出现颜色和格式内容
+                String content = "";
+                if (displaySkin.get("dialog") instanceof String){
+                    content = displaySkin.getString("dialog");
+                }else if (displaySkin.get("content") instanceof String){
+                    content = displaySkin.getString("content");
+                }
+
+                log.info("新增立绘：" + skinName);
+                skinInfo.setSkinId(skinId);
+                skinInfo.setCharId(charId);
+                skinInfo.setSkinPath("runFile/skin/" + skinFile);
+                skinInfo.setSkinName(skinName);
+                skinInfo.setContent(content);
+                skinInfo.setSkinGroupId(displaySkin.getString("skinGroupId"));
+                skinInfo.setSkinGroupName(displaySkin.getString("skinGroupName"));
+                skinInfo.setDrawerName(drawer.toString());
+                try {
+                    //非压缩包获取时，进行下载
+                    if (!downloadInfo.isPullZip()) {
                         downloadInfo.setSecond(300);
-                        downloadInfo.setFileName(fileName);
-                        downloadInfo.setUrl(url + "skin/" + split[0] + "_" + split[1] + ".png");
+                        downloadInfo.setFileName("runFile/skin/" + skinFile + ".png");
+                        downloadInfo.setUrl(url + "skin/" + skinFile + ".png");
                         downloadOneFile(downloadInfo);
                         downloadInfo.setFileName(null);
                         downloadInfo.setUrl(null);
-                        //downloadOneFile(fileName, url + "skin/" + split[0] + "_" + split[1] + ".png");
-                        skinInfo.setSkinBase64(fileName);
-                        skinInfoMapper.insertBySkinInfo(skinInfo);
-                    } catch (IOException e) {
-                        log.error("下载{}时装失败", name);
                     }
+                    skinInfoMapper.insertBySkinInfo(skinInfo);
+                }catch (IOException e) {
+                    log.error("下载{}时装失败", skinName);
                 }
+
             }
         }
-        log.info("原有时装{}个，当前时装{}个", skinNames.size(), skinJson.length());
+        updateSkinGroupInfo(skinJson);
         log.info("时装数据更新完成--");
+    }
+
+    /**
+     * 拉取时装系列信息写入operator_skin_group表
+     * @param skinJson 立绘信息json表
+     */
+    private void updateSkinGroupInfo(JSONObject skinJson){
+        log.info("开始拉取时装系列信息");
+        JSONObject brandList = skinJson.getJSONObject("brandList");
+        List<String> brandIdList = skinInfoMapper.selectAllBrandId();
+        for (String brandId : brandList.keySet()) {
+            SkinGroupInfo skinGroupInfo = new SkinGroupInfo();
+            JSONObject singleBrand = brandList.getJSONObject(brandId);
+            //系列中包含的所有id编号组
+            //把这奇葩的"™"给我删咯！
+            String brandName = singleBrand.getString("brandName").replace("™","");
+            if (brandIdList.contains(brandId)){
+                log.info("{}系列的时装信息已存在",brandName);
+            } else {
+                skinGroupInfo.setBrandId(brandId);
+                skinGroupInfo.setBrandName(brandName);
+                skinGroupInfo.setBrandCapitalName(singleBrand.getString("brandCapitalName"));
+                skinGroupInfo.setDescription(singleBrand.getString("description"));
+                skinInfoMapper.insertSkinGroupInfo(skinGroupInfo);
+                log.info("新增时装系列：{}系列",brandName);
+            }
+            //时装系列信息收录完成后，给每个时装注入系列信息
+            JSONArray groupList = singleBrand.getJSONArray("groupList");
+            for (Object object : groupList) {
+                String skinGroupId = (String) object;
+                skinInfoMapper.updateBrandIdBySkinGroupId(brandId, skinGroupId);
+            }
+        }
     }
 
     /**
@@ -879,6 +1239,28 @@ public class UpdateDataService {
     public void updateItemIcon(DownloadOneFileInfo downloadInfo) {
         log.info("开始拉取最新材料图标");
         List<String> maters = materialMadeMapper.selectAllMaterId();
+        if (downloadInfo.isPullZip()){
+            Map<String,String> map = new HashMap<>(){{
+                put("Arknights-Bot-Resource-main/item/","runFile/itemIcon/");
+            }};
+            try {
+                log.info("正在尝试从压缩包中拉取");
+                pullFromZipFile(false,map);
+                for (String id : maters) {
+                    String picBase64 = materialMadeMapper.selectMaterialPicById(id);
+                    if (picBase64 == null) {
+                        String iconId = materialMadeMapper.selectAllMaterIconId(id);
+                        String fileName = "runFile/itemIcon/" + iconId + ".png";
+                        materialMadeMapper.updateBase64ById(fileName, id);
+                    }
+                }
+                log.info("材料图标拉取完成--");
+                return;
+            } catch (IOException e) {
+                log.error("拉取出现错误，失败原因："+ e + "\n重新尝试下载");
+            }
+        }
+
         for (String id : maters) {
             String picBase64 = materialMadeMapper.selectMaterialPicById(id);
             if (picBase64 == null) {
@@ -904,8 +1286,35 @@ public class UpdateDataService {
      * 更新干员半身照，增量更新
      */
     public void updateOperatorPng(DownloadOneFileInfo downloadInfo) {
-        log.info("开始更新干员半身照");
+        log.info("开始更新干员半身照与头像");
         List<String> allOperatorId = operatorInfoMapper.getAllOperatorId();
+        if (downloadInfo.isPullZip()){
+            Map<String,String> map = new HashMap<>(){{
+                put("Arknights-Bot-Resource-main/portrait/","runFile/operatorPng/");
+                put("Arknights-Bot-Resource-main/avatar/","runFile/avatar/");
+            }};
+            try {
+                log.info("正在尝试从压缩包中拉取");
+                pullFromZipFile(false,map);
+                for (String id : allOperatorId) {
+                    String base = operatorInfoMapper.selectOperatorPngById(id);
+                    if (base == null) {
+                        String fileName = "runFile/operatorPng/" + id + "_1.png";
+                        operatorInfoMapper.insertOperatorPngById(id, fileName);
+                    }
+                    String avatar = operatorInfoMapper.selectOperatorAvatarPngById(id);
+                    if (avatar == null) {
+                        String avatarFile = "runFile/avatar/" + id + ".png";
+                        operatorInfoMapper.insertOperatorAvatarPngById(id, avatarFile);
+                    }
+                }
+                log.info("干员半身照拉取完成--");
+                return;
+            } catch (IOException e) {
+                log.error("拉取出现错误，失败原因："+ e + "\n重新尝试下载");
+            }
+        }
+
         for (String id : allOperatorId) {
             String base = operatorInfoMapper.selectOperatorPngById(id);
             if (base == null) {
@@ -949,6 +1358,27 @@ public class UpdateDataService {
     public void updateOperatorSkillPng(DownloadOneFileInfo downloadInfo) {
         log.info("开始更新干员技能图标");
         List<SkillInfo> skillInfo = skillDescMapper.selectAllSkillPng();
+        if (downloadInfo.isPullZip()){
+            Map<String,String> map = new HashMap<>(){{
+                put("Arknights-Bot-Resource-main/skill/","runFile/skill/");
+            }};
+            try {
+                log.info("正在尝试从压缩包中拉取");
+                pullFromZipFile(false,map);
+                for (SkillInfo skill : skillInfo) {
+                    String png = skill.getSkillPng();
+                    if (png == null) {
+                        String fileName = "runFile/skill/skill_icon_" + skill.getSkillIdYj() + ".png";
+                        operatorInfoMapper.insertOperatorSkillPngById(skill.getSkillIdYj(), fileName);
+                    }
+                }
+                log.info("干员技能图标拉取完成--");
+                return;
+            } catch (IOException e) {
+                log.error("拉取出现错误，失败原因："+ e + "\n重新尝试下载");
+            }
+        }
+
         for (SkillInfo skill : skillInfo) {
             String png = skill.getSkillPng();
             if (png == null) {
@@ -971,7 +1401,8 @@ public class UpdateDataService {
     }
 
     /**
-     * 更新干员语音，增量更新
+     * 更新干员语音文件，增量更新
+     * @param downloadInfo 置入下载的代理信息
      */
     public void updateOperatorVoice(DownloadOneFileInfo downloadInfo) {
         log.info("开始更新干员语音");
@@ -1006,9 +1437,13 @@ public class UpdateDataService {
             if (type.equals("voice_custom")) {
                 voiceCharId = name.getCharId() + "_cn_topolect";
             }
-            File file = new File("runFile/" + type + "/" + voiceCharId);
-            if (!file.exists()) {
-                file.mkdirs();
+            Path tempPath = Paths.get("runFile/" + type + "/" + voiceCharId);
+            if (Files.exists(tempPath)){
+                try {
+                    Files.createDirectories(tempPath);
+                } catch (IOException e) {
+                    log.error(e.toString());
+                }
             }
             for (String voiceName : VoiceService.voiceList) {
                 //判断是否存在该语音
@@ -1039,273 +1474,307 @@ public class UpdateDataService {
     }
 
     /**
-     * 发送url的get请求获取结果json字符串
-     * @param downloadInfo 相关信息
-     * @return 返回结果String
+     * 干员基础信息更新总支，分别更新基础数据，技能和基建技能到表中
+     * @param charId 干员的charId号码
+     * @param operatorJson character_table中干员基础信息部分解析数据
+     * @param skillJson skill_table中干员基础信息部分解析数据
+     * @param buildingJson building_data中干员基础信息部分解析数据
+     * @return 该干员在数据库中的自增ID
      */
-    public String getJsonStringFromUrl(DownloadOneFileInfo downloadInfo) throws IOException {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        CloseableHttpResponse response;
-        HttpGet httpGet = new HttpGet(downloadInfo.getUrl());
-        if (downloadInfo.isUseHost()) {
-            //如果要使用代理，加上代理服务器信息
-            HttpHost httpHost = new HttpHost(downloadInfo.getHostname(), downloadInfo.getPort());
-            RequestConfig config = RequestConfig.custom().setProxy(httpHost).build();
-            httpGet.setConfig(config);
+    public Integer updateOperatorByJson(String charId, JSONObject operatorJson, JSONObject skillJson, JSONObject buildingJson) {
+        Integer operatorId = updateOperatorInfo(charId,operatorJson);
+        if (operatorId != null) {
+            updatePanelData(operatorId, operatorJson);
+            updateTalent(operatorId, operatorJson);
+            updateSkill(operatorId, operatorJson, skillJson);
+            updateBuilding(charId,operatorId, buildingJson);
         }
-        response = httpclient.execute(httpGet);
-        HttpEntity httpEntity = response.getEntity();//获取响应文本体
-        return EntityUtils.toString(httpEntity, "utf-8");
-        //HttpHeaders httpHeaders = new HttpHeaders();
-        //httpHeaders.set("User-Agent", "PostmanRuntime/7.26.8");
-        //httpHeaders.set("Authorization", "2");
-        //httpHeaders.set("Host", "andata.somedata.top");
-        //HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
-        //String s = null;
-        //try {
-        //    s = restTemplate
-        //            .exchange(url, HttpMethod.GET, httpEntity, String.class).getBody();
-        //} catch (Exception ignored) {
-
-        //}
-        //return s;
+        return operatorId;
     }
 
     /**
-     * 读取文件的内容字符串
-     * @param fileName url
-     * @return 返回结果String
+     * 更新干员基础信息，写入operator表，返回表中的自增ID号
+     * 召唤物则写入operator_summoner表
+     * @param isOperator 更新的基础信息是否为干员，是干员为true，是召唤物为false
+     * @param charId 干员的charId号码
+     * @param operatorJson character_table中干员基础信息部分解析数据
+     * @return 数据库中的自增干员ID
      */
-    public String getJsonStringFromFile(String fileName) {
-        File file = new File("runFile/download/" + fileName);
-        StringBuilder laststr = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))){
-            // System.out.println("以行为单位读取文件内容，一次读一整行：");
-            String tempString;
-            // 一次读入一行，直到读入null为文件结束
-            while ((tempString = reader.readLine()) != null) {
-                laststr.append(tempString);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return laststr.toString();
-    }
+    private Integer updateOperatorInfo(boolean isOperator, String charId, JSONObject operatorJson){
+        //职业名与数字标注转换
+        Map<String, Integer> operatorClass = new HashMap<>(){{
+            put("PIONEER", 1);
+            put("WARRIOR", 2);
+            put("TANK", 3);
+            put("SNIPER", 4);
+            put("CASTER", 5);
+            put("SUPPORT", 6);
+            put("MEDIC", 7);
+            put("SPECIAL", 8);
+        }};
 
-    /**
-     * 更新单个干员详细信息。包括技能天赋
-     *
-     * @param jsonObj 单个干员详细json
-     * @return 返回更新数量
-     */
-    public Integer updateOperatorByJson(String charId, JSONObject jsonObj, JSONObject skillObj, JSONObject buildingObj) {
-        Integer id = operatorInfoMapper.getOperatorIdByChar(charId);
-        if (id != null) {
-            log.info("干员{}已存在", charId);
-            return id;
-        }
-        Map<String, Integer> operatorClass = new HashMap<>(8);
-        operatorClass.put("PIONEER", 1);
-        operatorClass.put("WARRIOR", 2);
-        operatorClass.put("TANK", 3);
-        operatorClass.put("SNIPER", 4);
-        operatorClass.put("CASTER", 5);
-        operatorClass.put("SUPPORT", 6);
-        operatorClass.put("MEDIC", 7);
-        operatorClass.put("SPECIAL", 8);
+        int rarity = operatorJson.getInt("rarity") + 1;
+        boolean isNotObtainable = operatorJson.getBoolean("isNotObtainable");
 
-        String name = jsonObj.getString("name");
-        //近卫兔兔改个名
-        if (jsonObj.getJSONArray("phases").getJSONObject(0).getString("characterPrefabKey").equals("char_1001_amiya2")) {
-            name = "近卫阿米娅";
-        }
-        int rarity = jsonObj.getInt("rarity") + 1;
-        boolean isNotObtainable = jsonObj.getBoolean("isNotObtainable");
+        String name = getName(operatorJson);
 
         //封装干员信息
         OperatorInfo operatorInfo = new OperatorInfo();
-        operatorInfo.setOperator_name(name.trim());
-        operatorInfo.setOperator_rarity(rarity);
-        if (!isNotObtainable) {
-            operatorInfo.setAvailable(1);
-        } else {
+        operatorInfo.setCharId(charId);
+        operatorInfo.setOperatorName(name.trim());
+        operatorInfo.setOperatorRarity(rarity);
+        if (isNotObtainable) {
             operatorInfo.setAvailable(0);
+        } else {
+            operatorInfo.setAvailable(1);
         }
-        operatorInfo.setIn_limit(0);
-        operatorInfo.setOperator_class(operatorClass.get(jsonObj.getString("profession")));
+        operatorInfo.setInLimit(0);
+        operatorInfo.setOperatorClass(operatorClass.get(operatorJson.getString("profession")));
 
-        updateMapper.insertOperator(operatorInfo);
-        log.info("更新干员{}基本信息成功", name);
-        Integer operatorId = updateMapper.selectOperatorIdByName(name);
+        if (isOperator){
+            updateMapper.insertOperator(operatorInfo);
+            log.info("更新干员{}基本信息成功", name);
+            return updateMapper.selectOperatorIdByCharId(charId);
+        }else {
+            updateMapper.insertSummoner(operatorInfo);
+            log.info("更新特殊召唤物{}基本信息成功", name);
+            return updateMapper.selectSummonerIdByCharId(charId);
+        }
+    }
 
-        JSONArray phases = jsonObj.getJSONArray("phases");
-        if (operatorId != null) {
-            int length = phases.length();
-            //封装干员面板信息（满级无潜能无信赖）
-            JSONArray operatorPanel = phases.getJSONObject(length - 1).getJSONArray("attributesKeyFrames");
-            JSONObject panelMax = operatorPanel.getJSONObject(operatorPanel.length() - 1).getJSONObject("data");
-            OperatorData operatorData = new OperatorData();
-            operatorData.setId(operatorId);
-            operatorData.setAtk(panelMax.getInt("atk"));
-            operatorData.setDef(panelMax.getInt("def"));
-            operatorData.setMagicResistance(panelMax.getInt("magicResistance"));
-            operatorData.setMaxHp(panelMax.getInt("maxHp"));
-            operatorData.setBlockCnt(panelMax.getInt("blockCnt"));
-            operatorData.setCost(panelMax.getInt("cost"));
-            operatorData.setBaseAttackTime(panelMax.getDouble("baseAttackTime"));
-            operatorData.setRespawnTime(panelMax.getInt("respawnTime"));
+    private Integer updateOperatorInfo(String charId, JSONObject operatorJson){
+        return updateOperatorInfo(true,charId,operatorJson);
+    }
+
+    /**
+     * 更新干员面板信息，写入operator表
+     * 召唤物则写入operator_summoner表
+     * 更新精英化信息，写入operator_evolve_costs表
+     * 如果为召唤物，跳过精英化信息写入
+     * @param isOperator 更新的基础信息是否为干员，是干员为true，是召唤物为false
+     * @param operatorId 数据库中的自增干员ID
+     * @param operatorJson character_table中干员基础信息部分解析数据
+     */
+    private void updatePanelData(boolean isOperator, Integer operatorId, JSONObject operatorJson){
+        JSONArray phases = operatorJson.getJSONArray("phases");
+        String name = getName(operatorJson);
+        int length = phases.length();
+        //封装干员面板信息（满级无潜能无信赖）
+        JSONArray operatorPanel = phases.getJSONObject(length - 1).getJSONArray("attributesKeyFrames");
+        JSONObject panelMax = operatorPanel.getJSONObject(operatorPanel.length() - 1).getJSONObject("data");
+        OperatorData operatorData = new OperatorData();
+        operatorData.setId(operatorId);
+        operatorData.setAtk(panelMax.getInt("atk"));
+        operatorData.setDef(panelMax.getInt("def"));
+        operatorData.setMagicResistance(panelMax.getInt("magicResistance"));
+        operatorData.setMaxHp(panelMax.getInt("maxHp"));
+        operatorData.setBlockCnt(panelMax.getInt("blockCnt"));
+        operatorData.setCost(panelMax.getInt("cost"));
+        operatorData.setBaseAttackTime(panelMax.getDouble("baseAttackTime"));
+        operatorData.setRespawnTime(panelMax.getInt("respawnTime"));
+        if(isOperator) {
             updateMapper.updateOperatorData(operatorData);
-
-            log.info("更新{}干员面板信息成功", name);
-            //封装干员精英化花费
-            for (int i = 1; i < length; i++) {
-                JSONObject array = phases.getJSONObject(i);
-                if (array.get("evolveCost") instanceof JSONArray) {
-                    JSONArray evolveJson = array.getJSONArray("evolveCost");
-                    for (int j = 0; j < evolveJson.length(); j++) {
-                        JSONObject evolve = evolveJson.getJSONObject(j);
-                        //精英i花费
-                        OperatorEvolveInfo operatorEvolveInfo = new OperatorEvolveInfo();
-                        operatorEvolveInfo.setOperatorId(operatorId);
-                        operatorEvolveInfo.setEvolveLevel(i);
-                        operatorEvolveInfo.setUseMaterialId(evolve.getInt("id"));
-                        operatorEvolveInfo.setUseNumber(evolve.getInt("count"));
-                        updateMapper.insertOperatorEvolve(operatorEvolveInfo);
-                    }
-                }
-            }
-            log.info("更新{}干员精英化材料成功", name);
-
-            //封装干员天赋
-            if (jsonObj.get("talents") instanceof JSONArray) {
-                JSONArray talents = jsonObj.getJSONArray("talents");
-                for (int i = 0; i < talents.length(); i++) {
-                    JSONArray candidates = talents.getJSONObject(i).getJSONArray("candidates");
-                    for (int j = 0; j < candidates.length(); j++) {
-                        TalentInfo talentInfo = new TalentInfo();
-                        JSONObject candidate = candidates.getJSONObject(j);
-                        if (candidate.get("name") instanceof String) {
-                            talentInfo.setTalentName(candidate.getString("name"));
-                        }
-                        Pattern pattern = Pattern.compile("<(.*?)>");
-                        if (candidate.get("description") instanceof String) {
-                            Matcher matcher = pattern.matcher(candidate.getString("description"));
-                            talentInfo.setDescription(matcher.replaceAll(""));
-                        }
-                        talentInfo.setLevel(candidate.getJSONObject("unlockCondition").getInt("level"));
-                        talentInfo.setPhase(candidate.getJSONObject("unlockCondition").getInt("phase"));
-                        talentInfo.setPotential(candidate.getInt("requiredPotentialRank"));
-                        talentInfo.setOperatorId(operatorId);
-                        updateMapper.insertOperatorTalent(talentInfo);
-                    }
-                }
-                log.info("更新{}干员天赋成功", name);
-            }
-
-            //封装干员技能
-            JSONArray skills = jsonObj.getJSONArray("skills");
-            for (int i = 0; i < skills.length(); i++) {
-                OperatorSkillInfo operatorSkillInfo = new OperatorSkillInfo();
-                operatorSkillInfo.setOperatorId(operatorId);
-                operatorSkillInfo.setSkillIndex(i + 1);
-                if (skills.getJSONObject(i).get("skillId") instanceof String) {
-                    JSONObject skillJson = skillObj.getJSONObject(skills.getJSONObject(i).getString("skillId"));
-                    String skillName = skillJson.getJSONArray("levels").getJSONObject(0).getString("name");
-                    String skillIdYj = skills.getJSONObject(i).getString("skillId");
-                    operatorSkillInfo.setSkillName(skillName);
-                    if (skillJson.get("iconId") instanceof String) {
-                        operatorSkillInfo.setSkillIdYj(skillJson.getString("iconId"));
-                    } else {
-                        Pattern skillIdPattern = Pattern.compile("\\[(0-9)\\]");
-                        Matcher skillIdMatcher = skillIdPattern.matcher(skillIdYj);
-                        operatorSkillInfo.setSkillIdYj(skillIdMatcher.replaceAll(""));
-                    }
-                    updateMapper.insertOperatorSkill(operatorSkillInfo);
-                    Integer skillId = updateMapper.selectSkillIdByName(skillName);
-
-                    JSONArray levels = skillJson.getJSONArray("levels");
-
-                    for (int level = 0; level < levels.length(); level++) {
-                        JSONObject skillDescJson = levels.getJSONObject(level);
-                        SkillDesc skillDesc = new SkillDesc();
-                        skillDesc.setSkillId(skillId);
-                        skillDesc.setSkillLevel(level + 1);
-                        skillDesc.setSkillType(skillDescJson.getInt("skillType"));
-
-                        //获取key-value列表
-                        Map<String, Double> parameters = new HashMap<>();
-                        JSONArray mapList = skillDescJson.getJSONArray("blackboard");
-                        for (int keyId = 0; keyId < mapList.length(); keyId++) {
-                            parameters.put(mapList.getJSONObject(keyId).getString("key").toLowerCase(),
-                                    mapList.getJSONObject(keyId).getDouble("value"));
-                        }
-
-                        skillDesc.setDescription(getValueByKeysFormatString(skillDescJson.getString("description"), parameters));
-
-                        skillDesc.setSpType(skillDescJson.getJSONObject("spData").getInt("spType"));
-                        skillDesc.setMaxCharge(skillDescJson.getJSONObject("spData").getInt("maxChargeTime"));
-                        skillDesc.setSpCost(skillDescJson.getJSONObject("spData").getInt("spCost"));
-                        skillDesc.setSpInit(skillDescJson.getJSONObject("spData").getInt("initSp"));
-                        skillDesc.setDuration(skillDescJson.getInt("duration"));
-
-                        updateMapper.updateSkillDecs(skillDesc);
-                    }
-                    log.info("更新{}干员技能{}信息成功", name, skillName);
-
-                    //获取技能等级列表(专一专二专三)
-                    JSONArray levelUpCostCond = skills.getJSONObject(i).getJSONArray("levelUpCostCond");
-                    //该技能专j+1的花费
-                    for (int j = 0; j < levelUpCostCond.length(); j++) {
-                        JSONObject skillCostObj = levelUpCostCond.getJSONObject(j);
-                        if (skillCostObj.get("levelUpCost") instanceof JSONArray) {
-                            JSONArray levelUpCost = skillCostObj.getJSONArray("levelUpCost");
-                            for (int k = 0; k < levelUpCost.length(); k++) {
-                                SkillMaterInfo skillMaterInfo = new SkillMaterInfo();
-                                skillMaterInfo.setSkillId(skillId);
-                                skillMaterInfo.setMaterLevel(j + 1);
-                                skillMaterInfo.setUseMaterialId(levelUpCost.getJSONObject(k).getInt("id"));
-                                skillMaterInfo.setUseNumber(levelUpCost.getJSONObject(k).getInt("count"));
-                                updateMapper.insertSkillMater(skillMaterInfo);
-                            }
-                        }
-                    }
-                    log.info("更新{}干员技能{}专精材料成功", name, skillName);
-                }
-            }
-
-            //封装干员基建技能
-            if (buildingObj.getJSONObject("chars").has(charId)) {
-                JSONObject chars = buildingObj.getJSONObject("chars").getJSONObject(charId);
-                JSONObject buffs = buildingObj.getJSONObject("buffs");
-                if (chars.get("buffChar") instanceof JSONArray) {
-                    JSONArray buildingData = chars.getJSONArray("buffChar");
-                    for (int i = 0; i < buildingData.length(); i++) {
-                        if (buildingData.getJSONObject(i).get("buffData") instanceof JSONArray) {
-                            JSONArray build1 = buildingData.getJSONObject(i).getJSONArray("buffData");
-                            for (int j = 0; j < build1.length(); j++) {
-                                BuildingSkill buildingSkill = new BuildingSkill();
-                                JSONObject buildObj = build1.getJSONObject(j);
-                                String buffId = buildObj.getString("buffId");
-                                buildingSkill.setOperatorId(operatorId);
-                                buildingSkill.setPhase(buildObj.getJSONObject("cond").getInt("phase"));
-                                buildingSkill.setLevel(buildObj.getJSONObject("cond").getInt("level"));
-                                buildingSkill.setBuffName(buffs.getJSONObject(buffId).getString("buffName"));
-                                buildingSkill.setRoomType(buffs.getJSONObject(buffId).getString("roomType"));
-                                //正则表达式去除标签
-                                Pattern pattern = Pattern.compile("<(.*?)>");
-                                Matcher matcher = pattern.matcher(buffs.getJSONObject(buffId).getString("description"));
-                                buildingSkill.setDescription(matcher.replaceAll(""));
-                                buildingSkillMapper.insertBuildingSkill(buildingSkill);
-                            }
-                        }
-                    }
-                }
-                log.info("更新{}干员基建技能成功", name);
-            }
+            log.info("更新干员{}面板信息成功", name);
+        }else {
+            updateMapper.updateSummonerData(operatorData);
+            log.info("更新特殊召唤物{}面板信息成功", name);
+            return;
         }
 
-        return operatorId;
+        //封装干员精英化花费
+        for (int i = 1; i < length; i++) {
+            JSONObject array = phases.getJSONObject(i);
+            if (array.get("evolveCost") instanceof JSONArray) {
+                JSONArray evolveJson = array.getJSONArray("evolveCost");
+                for (int j = 0; j < evolveJson.length(); j++) {
+                    JSONObject evolve = evolveJson.getJSONObject(j);
+                    //精英i花费
+                    OperatorEvolveInfo operatorEvolveInfo = new OperatorEvolveInfo();
+                    operatorEvolveInfo.setOperatorId(operatorId);
+                    operatorEvolveInfo.setEvolveLevel(i);
+                    operatorEvolveInfo.setUseMaterialId(evolve.getInt("id"));
+                    operatorEvolveInfo.setUseNumber(evolve.getInt("count"));
+                    updateMapper.insertOperatorEvolve(operatorEvolveInfo);
+                }
+            }
+        }
+        log.info("更新{}干员精英化材料成功", name);
+    }
+
+    private void updatePanelData(Integer operatorId, JSONObject operatorJson){
+        updatePanelData(true,operatorId,operatorJson);
+    }
+
+    /**
+     * 更新干员天赋信息，写入operator_talent表
+     * @param operatorId 数据库中的自增干员ID
+     * @param operatorJson character_table中干员基础信息部分解析数据
+     */
+    private void updateTalent(Integer operatorId, JSONObject operatorJson){
+        String name = getName(operatorJson);
+        //封装干员天赋
+        if (operatorJson.get("talents") instanceof JSONArray) {
+            JSONArray talents = operatorJson.getJSONArray("talents");
+            for (int i = 0; i < talents.length(); i++) {
+                JSONArray candidates = talents.getJSONObject(i).getJSONArray("candidates");
+                for (int j = 0; j < candidates.length(); j++) {
+                    TalentInfo talentInfo = new TalentInfo();
+                    JSONObject candidate = candidates.getJSONObject(j);
+                    if (candidate.get("name") instanceof String) {
+                        talentInfo.setTalentName(candidate.getString("name"));
+                    }
+                    Pattern pattern = Pattern.compile("<(.*?)>");
+                    if (candidate.get("description") instanceof String) {
+                        Matcher matcher = pattern.matcher(candidate.getString("description"));
+                        talentInfo.setDescription(matcher.replaceAll(""));
+                    }
+                    talentInfo.setLevel(candidate.getJSONObject("unlockCondition").getInt("level"));
+                    talentInfo.setPhase(candidate.getJSONObject("unlockCondition").getInt("phase"));
+                    talentInfo.setPotential(candidate.getInt("requiredPotentialRank"));
+                    talentInfo.setOperatorId(operatorId);
+                    updateMapper.insertOperatorTalent(talentInfo);
+                }
+            }
+            log.info("更新{}干员天赋成功", name);
+        }
+    }
+
+    /**
+     * 更新干员技能，写入operator_skill表
+     * 更新干员技能详细描述，写入operator_skill_desc表
+     * 更新干员技能升级所需材料信息，写入operator_skill_mastery_costs
+     * @param operatorId 数据库中的自增干员ID
+     * @param operatorJson character_table中干员基础信息部分解析数据
+     * @param skillJson skill_table中干员基础信息部分解析数据
+     */
+    private void updateSkill(Integer operatorId, JSONObject operatorJson, JSONObject skillJson){
+        String name = getName(operatorJson);
+        //封装干员技能
+        JSONArray skills = operatorJson.getJSONArray("skills");
+        for (int i = 0; i < skills.length(); i++) {
+            OperatorSkillInfo operatorSkillInfo = new OperatorSkillInfo();
+            operatorSkillInfo.setOperatorId(operatorId);
+            operatorSkillInfo.setSkillIndex(i + 1);
+            if (skills.getJSONObject(i).get("skillId") instanceof String) {
+                JSONObject skillInfo = skillJson.getJSONObject(skills.getJSONObject(i).getString("skillId"));
+                String skillName = skillInfo.getJSONArray("levels").getJSONObject(0).getString("name");
+                String skillIdYj = skills.getJSONObject(i).getString("skillId");
+                operatorSkillInfo.setSkillName(skillName);
+                if (skillInfo.get("iconId") instanceof String) {
+                    operatorSkillInfo.setSkillIdYj(skillInfo.getString("iconId"));
+                } else {
+                    Pattern skillIdPattern = Pattern.compile("\\[(0-9)\\]");
+                    Matcher skillIdMatcher = skillIdPattern.matcher(skillIdYj);
+                    operatorSkillInfo.setSkillIdYj(skillIdMatcher.replaceAll(""));
+                }
+                updateMapper.insertOperatorSkill(operatorSkillInfo);
+                Integer skillId = updateMapper.selectSkillIdByName(skillName);
+
+                JSONArray levels = skillInfo.getJSONArray("levels");
+
+                for (int level = 0; level < levels.length(); level++) {
+                    JSONObject skillDescJson = levels.getJSONObject(level);
+                    SkillDesc skillDesc = new SkillDesc();
+                    skillDesc.setSkillId(skillId);
+                    skillDesc.setSkillLevel(level + 1);
+                    skillDesc.setSkillType(skillDescJson.getInt("skillType"));
+
+                    //获取技能面板数据的key-value列表
+                    Map<String, Double> parameters = new HashMap<>();
+                    JSONArray mapList = skillDescJson.getJSONArray("blackboard");
+                    for (Object map : mapList){
+                        parameters.put(((JSONObject) map).getString("key").toLowerCase(),((JSONObject) map).getDouble("value"));
+                    }
+
+                    skillDesc.setDescription(getValueByKeysFormatString(skillDescJson.getString("description"), parameters));
+                    skillDesc.setSpType(skillDescJson.getJSONObject("spData").getInt("spType"));
+                    skillDesc.setMaxCharge(skillDescJson.getJSONObject("spData").getInt("maxChargeTime"));
+                    skillDesc.setSpCost(skillDescJson.getJSONObject("spData").getInt("spCost"));
+                    skillDesc.setSpInit(skillDescJson.getJSONObject("spData").getInt("initSp"));
+                    skillDesc.setDuration(skillDescJson.getInt("duration"));
+
+                    updateMapper.updateSkillDesc(skillDesc);
+                }
+                log.info("更新{}干员技能{}信息成功", name, skillName);
+
+                //获取技能等级列表(专一专二专三)
+                JSONArray levelUpCostCond = skills.getJSONObject(i).getJSONArray("levelUpCostCond");
+                //该技能专j+1的花费
+                for (int j = 0; j < levelUpCostCond.length(); j++) {
+                    JSONObject skillCostObj = levelUpCostCond.getJSONObject(j);
+                    if (skillCostObj.get("levelUpCost") instanceof JSONArray) {
+                        JSONArray levelUpCost = skillCostObj.getJSONArray("levelUpCost");
+                        for (int k = 0; k < levelUpCost.length(); k++) {
+                            SkillMaterInfo skillMaterInfo = new SkillMaterInfo();
+                            skillMaterInfo.setSkillId(skillId);
+                            skillMaterInfo.setMaterLevel(j + 1);
+                            skillMaterInfo.setUseMaterialId(levelUpCost.getJSONObject(k).getInt("id"));
+                            skillMaterInfo.setUseNumber(levelUpCost.getJSONObject(k).getInt("count"));
+                            updateMapper.insertSkillMater(skillMaterInfo);
+                        }
+                    }
+                }
+                log.info("更新{}干员技能{}专精材料成功", name, skillName);
+            }
+        }
+    }
+
+    /**
+     * 更新干员基建技能信息，写入operator_building_skill表
+     * @param charId 干员的charId号码
+     * @param operatorId 数据库中的自增干员ID
+     * @param buildingJson building_data中干员基础信息部分解析数据
+     */
+    private void updateBuilding(String charId,Integer operatorId, JSONObject buildingJson){
+        String name = operatorInfoMapper.getOperatorNameById(operatorId);
+        if (name == null){
+            name = operatorInfoMapper.getSummonerNameById(operatorId);
+        }
+        //封装干员基建技能
+        if (buildingJson.getJSONObject("chars").has(charId)) {
+            JSONObject chars = buildingJson.getJSONObject("chars").getJSONObject(charId);
+            JSONObject buffs = buildingJson.getJSONObject("buffs");
+            if (chars.get("buffChar") instanceof JSONArray) {
+                JSONArray buildingData = chars.getJSONArray("buffChar");
+                for (int i = 0; i < buildingData.length(); i++) {
+                    if (buildingData.getJSONObject(i).get("buffData") instanceof JSONArray) {
+                        JSONArray build1 = buildingData.getJSONObject(i).getJSONArray("buffData");
+                        for (int j = 0; j < build1.length(); j++) {
+                            BuildingSkill buildingSkill = new BuildingSkill();
+                            JSONObject buildObj = build1.getJSONObject(j);
+                            String buffId = buildObj.getString("buffId");
+                            buildingSkill.setOperatorId(operatorId);
+                            buildingSkill.setPhase(buildObj.getJSONObject("cond").getInt("phase"));
+                            buildingSkill.setLevel(buildObj.getJSONObject("cond").getInt("level"));
+                            buildingSkill.setBuffName(buffs.getJSONObject(buffId).getString("buffName"));
+                            buildingSkill.setRoomType(buffs.getJSONObject(buffId).getString("roomType"));
+                            //正则表达式去除标签
+                            Pattern pattern = Pattern.compile("<(.*?)>");
+                            Matcher matcher = pattern.matcher(buffs.getJSONObject(buffId).getString("description"));
+                            buildingSkill.setDescription(matcher.replaceAll(""));
+                            buildingSkillMapper.insertBuildingSkill(buildingSkill);
+                        }
+                    }
+                }
+            }
+            log.info("更新干员{}基建技能成功", name);
+        }
+    }
+
+    /**
+     * 获取来自character_table中干员的名字
+     * @param operatorJson character_table中干员基础信息部分解析数据
+     * @return 干员名字
+     */
+    private String getName(JSONObject operatorJson){
+        String name;
+        //近卫兔兔改个名
+        if (operatorJson.getJSONArray("phases").getJSONObject(0).getString("characterPrefabKey").equals("char_1001_amiya2")){
+            name = "近卫阿米娅";
+        }else {
+            name = operatorJson.getString("name");
+        }
+        return name;
     }
 
     public void updateOperatorEquipByJson(){
@@ -1340,7 +1809,7 @@ public class UpdateDataService {
                         JSONObject part = parts.getJSONObject(j);
                         JSONArray candidates;
                         switch (part.getString("target")) {
-                            case "DISPLAY":
+                            case "DISPLAY" -> {
                                 candidates = part.getJSONObject("overrideTraitDataBundle").getJSONArray("candidates");
                                 for (int k = 0; k < candidates.length(); k++) {
                                     JSONObject candidate = candidates.getJSONObject(k);
@@ -1360,9 +1829,8 @@ public class UpdateDataService {
                                         overrideDescripton.append(getValueByKeysFormatString(override, parameters));
                                     }
                                 }
-                                break;
-                            case "TALENT_DATA_ONLY":
-                            case "TALENT":
+                            }
+                            case "TALENT_DATA_ONLY", "TALENT" -> {
                                 candidates = part.getJSONObject("addOrOverrideTalentDataBundle").getJSONArray("candidates");
                                 for (int k = 0; k < candidates.length(); k++) {
                                     JSONObject candidate = candidates.getJSONObject(k);
@@ -1378,9 +1846,8 @@ public class UpdateDataService {
                                         additionalDescription.append(getValueByKeysFormatString(additional, parameters));
                                     }
                                 }
-                                break;
-                            case "TRAIT_DATA_ONLY":
-                            case "TRAIT":
+                            }
+                            case "TRAIT_DATA_ONLY", "TRAIT" -> {
                                 candidates = part.getJSONObject("overrideTraitDataBundle").getJSONArray("candidates");
                                 for (int k = 0; k < candidates.length(); k++) {
                                     JSONObject candidate = candidates.getJSONObject(k);
@@ -1396,7 +1863,7 @@ public class UpdateDataService {
                                         overrideDescripton.append(getValueByKeysFormatString(override, parameters));
                                     }
                                 }
-                                break;
+                            }
                         }
                     }
 
@@ -1452,39 +1919,41 @@ public class UpdateDataService {
         log.info("模组数据更新完毕");
     }
 
-    public String getValueByKeysFormatString(String s, Map<String, Double> parameters){
+    public String getValueByKeysFormatString(String s, Map<String,Double> parameters){
         //使用正则表达式替换参数
         //代码可以运行不要乱改.jpg
         //这个正则已经不断进化成我看不懂的形式了
         Pattern pattern = Pattern.compile("<(.*?)>");
         Matcher matcher = pattern.matcher(s);
+        String aaa = matcher.replaceAll("");
         Pattern p = Pattern.compile("(\\{-?([a-zA-Z/.\\]\\[0-9_@]+):?([0-9.]*)(%?)\\})");
-        Matcher m = p.matcher(matcher.replaceAll(""));
-        StringBuffer stringBuffer = new StringBuffer();
+        Matcher m = p.matcher(aaa);
+
+        StringBuilder stringBuilder = new StringBuilder();
         while (m.find()) {
             String buffKey = m.group(2).toLowerCase();
             String percent = m.group(4);
             Double val = parameters.get(buffKey);
             String value;
             if (!percent.equals("")) {
-                value = BigDecimal.valueOf(val).multiply(new BigDecimal(100)).toString() + "%";
+                value = BigDecimal.valueOf(val).multiply(new BigDecimal(100)) + "%";
             } else {
                 value = FormatStringUtil.FormatDouble2String(val) + percent;
             }
-            m.appendReplacement(stringBuffer, value);
+            m.appendReplacement(stringBuilder, value);
         }
-        return m.appendTail(stringBuffer).toString().replace("--", "-");
+        return m.appendTail(stringBuilder).toString().replace("--", "-");
     }
 
     private void rebuildDatabase() {
-        File file = new File("runFile/arknights.db");
-        file.delete();
-        try (InputStream is = new ClassPathResource("/database/arknights.db").getInputStream(); FileOutputStream fs = new FileOutputStream(file)) {
-            boolean newFile = file.createNewFile();
-            byte[] b = new byte[1024];
-            while (is.read(b) != -1) {
-                fs.write(b);
-            }
+        Path destinationPath = Paths.get("runFile/arknights.db");
+        try {
+            Files.delete(destinationPath);
+        } catch (IOException e) {
+            log.error(e.toString());
+        }
+        try (InputStream is = new ClassPathResource("/database/arknights.db").getInputStream(); FileOutputStream fs = new FileOutputStream(destinationPath.toFile())) {
+            fs.write(is.readAllBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }

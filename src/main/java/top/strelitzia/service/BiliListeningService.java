@@ -90,11 +90,11 @@ public class BiliListeningService {
                                     newDetail.getTitle() + "\n" +
                                     newDetail.getText() + "\n" + biliSpace;
                             log.info("{}有新动态", name);
-                            List<Long> groups = biliMapper.selectGroupByUid(bili.getUid());
+                            List<Long> groups = biliMapper.selectGroupByUid(String.valueOf(bili.getUid()));
                             for (Iterator<Long> it = groups.listIterator(); it.hasNext();){
                                 Long group = it.next();
                                 if(!map.containsKey(group)) {
-                                    biliMapper.deleteGroupBiliRel(group,bili.getUid());
+                                    biliMapper.deleteBiliByUID(group,bili.getUid());
                                     it.remove();
                                 }
                             }
@@ -136,35 +136,33 @@ public class BiliListeningService {
         String title = "";
         String pic = null;
         switch (type) {
-            case 1:
+            case 1 -> {
                 dType = "转发";
                 title = "请点击链接查看转发动态详情";
                 text = cardJson.getJSONObject("item").getString("content");
-                break;
-            case 2://普通动态有图
+            }
+            case 2 -> {//普通动态有图
                 dType = "图文";
                 text = cardJson.getJSONObject("item").getString("description");
                 pic = cardJson.getJSONObject("item").getJSONArray("pictures").getJSONObject(0).getString("img_src");
-                break;
-            case 64://专栏动态
+            }
+            case 64 -> {//专栏动态
                 dType = "专栏";
                 title = cardJson.getString("title");
                 text = "https://www.bilibili.com/read/cv" + cardJson.getLong("id");
                 pic = cardJson.getJSONArray("image_urls").getString(0);
-                break;
-            case 4://普通动态无图
+            }
+            case 4 -> {//普通动态无图
                 dType = "文字";
                 text = cardJson.getJSONObject("item").getString("content");
-                break;
-            case 8://视频动态
+            }
+            case 8 -> {//视频动态
                 dType = "视频";
                 title = cardJson.getString("title");
                 pic = cardJson.getString("pic");
                 text = "https://www.bilibili.com/video/" + detailJson.getJSONObject("data").getJSONObject("card").getJSONObject("desc").getString("bvid");
-                break;
-            default:
-                title = "请点击链接查看最新动态";
-                break;
+            }
+            default -> title = "请点击链接查看最新动态";
         }
         dynamicDetail.setName(name);
         dynamicDetail.setTitle(title);
@@ -212,9 +210,68 @@ public class BiliListeningService {
         return replayInfo;
     }
 
+    @AngelinaGroup(keyWords = {"关注"}, description = "关注某个Uid")
+    public ReplayInfo focusOnBiliRel(MessageInfo messageInfo) {
+        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+        Long groupId = messageInfo.getGroupId();
+        boolean Admin = AdminUtil.getAdmin(messageInfo.getQq());
+        if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !Admin) {
+            replayInfo.setReplayMessage("您不是本群管理员，无权进行本群的关注操作");
+            return replayInfo;
+        }
+        if (messageInfo.getArgs().size() > 1) {
+            switch (messageInfo.getArgs().get(1)) {
+                case "添加" -> {
+                    if (messageInfo.getArgs().get(2).matches("^[0-9]+")) {
+                        Long biliId = Long.valueOf(messageInfo.getArgs().get(2));
+                        if (biliMapper.existBiliUid(biliId) == 0) {
+                            biliMapper.insertBiliUid(biliId);
+                        }
+                        List<Long> relation = biliMapper.selectUidByGroup(groupId);
+                        if (relation.contains(biliId)) {
+                            replayInfo.setReplayMessage("本群已经关注了这个uid");
+                        } else {
+                            if (relation.size() > 4) {
+                                replayInfo.setReplayMessage("本群关注数已达到上限5个");
+                            } else {
+                                biliMapper.insertGroupBiliRel(groupId, biliId);
+                                replayInfo.setReplayMessage("关注成功");
+                            }
+                        }
+                    } else {
+                        replayInfo.setReplayMessage("输入不符，请输入数字uid");
+                    }
+                }
+                case "移除" -> {
+                    if (messageInfo.getArgs().get(2).matches("^[0-9]+")) {
+                        Long biliId = Long.valueOf(messageInfo.getArgs().get(2));
+                        List<Long> relation = biliMapper.selectUidByGroup(groupId);
+                        if (relation.contains(biliId)) {
+                            biliMapper.deleteBiliByUID(groupId, biliId);
+                            replayInfo.setReplayMessage("取消关注成功");
+                        } else {
+                            replayInfo.setReplayMessage("本群已经还未关注这个uid");
+                        }
+                    } else {
+                        String name = messageInfo.getArgs().get(2);
+                        List<String> names = biliMapper.selectNameByGroup(groupId);
+                        if (names.contains(name)) {
+                            biliMapper.deleteBiliByName(groupId, name);
+                            replayInfo.setReplayMessage("取消关注成功");
+                        }else {
+                            replayInfo.setReplayMessage("未能查询到该名字的up信息（推荐使用uid移除）");
+                        }
+                    }
+                }
+                default -> replayInfo.setReplayMessage("命令不正确，当前包含命令：”添加“，”移除“");
+            }
+        }
+        return replayInfo;
+    }
+
     @AngelinaGroup(keyWords = {"关注列表"}, description = "查看本群关注的所有UID")
     public ReplayInfo getBiliList(MessageInfo messageInfo) {
-        List<BiliCount> bilis = biliMapper.getBiliCountListByGroupId(messageInfo.getGroupId());
+        List<BiliCount> bilis = biliMapper.getFocusListByGroupId(messageInfo.getGroupId());
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if (bilis.size() > 0) {
             StringBuilder s = new StringBuilder();
@@ -224,64 +281,6 @@ public class BiliListeningService {
             replayInfo.setReplayMessage(s.substring(1));
         }else {
             replayInfo.setReplayMessage("本群暂时还没有关注up哦~");
-        }
-        return replayInfo;
-    }
-
-    @AngelinaGroup(keyWords = {"关注"}, description = "关注某个Uid")
-    public ReplayInfo setGroupBiliRel(MessageInfo messageInfo) {
-        Long groupId = messageInfo.getGroupId();
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-
-        if (messageInfo.getArgs().size() > 1) {
-            String biliId = messageInfo.getArgs().get(1);
-            boolean Admin = AdminUtil.getAdmin(messageInfo.getQq());
-            if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !Admin) {
-                replayInfo.setReplayMessage("您不是本群管理员，无权进行本群的关注操作");
-            } else {
-                Integer integer = groupAdminInfoMapper.existGroupId(groupId);
-                if (integer == 0) {
-                    groupAdminInfoMapper.insertGroupId(groupId);
-                }
-                Long uid = Long.parseLong(biliId);
-                if (biliMapper.existBiliUid(uid) == 0) {
-                    biliMapper.insertBiliUid(uid);
-                }
-                Integer relation = biliMapper.selectGroupBiliRel(groupId, uid);
-                if (relation == 0) {
-                    if (biliMapper.getBiliCountListByGroupId(groupId).size() > 5) {
-                        replayInfo.setReplayMessage("本群关注数已超过上限5个");
-                    } else {
-                        biliMapper.insertGroupBiliRel(groupId, uid);
-                        replayInfo.setReplayMessage("关注成功");
-                    }
-                } else {
-                    replayInfo.setReplayMessage("本群已经关注了这个uid");
-                }
-            }
-        } else {
-            replayInfo.setReplayMessage("请输入关注Uid");
-        }
-        return replayInfo;
-    }
-
-    @AngelinaGroup(keyWords = {"取消关注", "取关"}, description = "取消关注某个Uid")
-    public ReplayInfo removeGroupBiliRel(MessageInfo messageInfo) {
-        Long groupId = messageInfo.getGroupId();
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-
-        if (messageInfo.getArgs().size() > 1) {
-            String biliId = messageInfo.getArgs().get(1);
-            boolean Admin = AdminUtil.getAdmin(messageInfo.getQq());
-            if (messageInfo.getUserAdmin().equals(MemberPermission.MEMBER) && !Admin) {
-                replayInfo.setReplayMessage("您不是本群管理员，无权进行本群的关注操作");
-            } else {
-                Long uid = Long.parseLong(biliId);
-                biliMapper.deleteGroupBiliRel(groupId, uid);
-                replayInfo.setReplayMessage("取消关注成功");
-            }
-        } else {
-            replayInfo.setReplayMessage("请输入需要取关的Uid");
         }
         return replayInfo;
     }

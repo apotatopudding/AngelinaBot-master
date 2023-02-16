@@ -93,7 +93,7 @@ public class ArknightsBattleground {
                     "\n" +
                     "\n如确认临时会话开启，请回复 ( 确认 ) 以开启绝地作战" +
                     "\n请务必仔细检查，如果确认开启而无法发送临时会话消息，绝地作战将会立刻关闭，扣除的积分则不再退还");
-            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            sendMessageUtil.sendFriendMsg(replayInfo);
             AngelinaListener angelinaListener = new AngelinaListener() {
                 //本人回复为确认时生效
                 @Override
@@ -116,7 +116,7 @@ public class ArknightsBattleground {
             if (recall == null) {
                 battleGroundGroup.remove(messageInfo.getGroupId());
                 replayInfo.setReplayMessage("长时间未确认，绝地作战已关闭");
-                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                sendMessageUtil.sendFriendMsg(replayInfo);
                 replayInfo.setReplayMessage("由于无法确认临时会话情况，绝地作战已关闭");
                 return replayInfo;
             }else {
@@ -126,7 +126,7 @@ public class ArknightsBattleground {
         }else {
             replayInfo.setReplayMessage("测试消息");
             try {
-                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                sendMessageUtil.sendFriendMsg(replayInfo);
             }catch (IllegalStateException e){
                 log.error(e.toString());
                 battleGroundGroup.remove(messageInfo.getGroupId());
@@ -331,7 +331,7 @@ public class ArknightsBattleground {
             }else { replayInfo.setReplayMessage("您还没有告诉我您要前往的地点呢，重新告诉我一下吧" ); }
         }else{ replayInfo.setReplayMessage("快去观看精彩的对决吧"); }//活动在办但是没有开始临时会话
         try {
-            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            sendMessageUtil.sendFriendMsg(replayInfo);
             replayInfo.setReplayMessage(null);
         }catch (IllegalStateException e){
             this.cleanGroupDate(messageInfo);
@@ -808,7 +808,7 @@ public class ArknightsBattleground {
                     ReplayInfo replayInfo = new ReplayInfo(messageInfo);
                     int time = (int) (second - ((System.currentTimeMillis() - limit.get(0)) / 1000));
                     replayInfo.setReplayMessage(messageInfo.getName() + "等等，休息一下，我太累了，休息，休息，再等"+ time +"秒再行动吧");
-                    this.sendMessageUtil.sendGroupTempMsg(replayInfo);
+                    this.sendMessageUtil.sendFriendMsg(replayInfo);
                     limit.add(System.currentTimeMillis());
                     qqMsgList.put(qq, limit);
                 } else {
@@ -875,7 +875,7 @@ public class ArknightsBattleground {
                 }
                 replayInfo.setQq(sameAreaQQ);
                 replayInfo.setReplayMessage(stringBuilder.toString());
-                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                sendMessageUtil.sendFriendMsg(replayInfo);
                 replayInfo.setReplayMessage(null);
             }
         }
@@ -898,7 +898,7 @@ public class ArknightsBattleground {
                 battleGroundMapper.updateInfoByGroupAndQQ(battleGroundInfo);
                 replayInfo.setQq(sameAreaQQ);
                 replayInfo.setReplayMessage("你被治安管理队乱枪打死在大街上，你不曾注意治安管理队在狞笑，很可惜本次大赛你被淘汰了");
-                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                sendMessageUtil.sendFriendMsg(replayInfo);
 
                 replayInfo.setReplayMessage( battleGroundInfo.getName() + "被治安管理队乱枪打死在大街上，死状极其惨烈，你有没有听见"+ battleGroundInfo.getName() +"的悲鸣！");
                 sendMessageUtil.sendGroupMsg(replayInfo);
@@ -996,7 +996,7 @@ public class ArknightsBattleground {
                 duelReduceDamage = 0;
                 replayInfo.setReplayMessage("你攻击了对方，对方受到了"+harm+"点伤害");
             }
-            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            sendMessageUtil.sendFriendMsg(replayInfo);
             replayInfo.setReplayMessage(null);
             //法术伤害计算
             if( duelMagicArmor >= magicAttack ){
@@ -1012,7 +1012,7 @@ public class ArknightsBattleground {
                 duelReduceDamage = 0;
                 replayInfo.setReplayMessage("你攻击了对方，对方受到了"+harm+"点法术伤害");
             }
-            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            sendMessageUtil.sendFriendMsg(replayInfo);
             replayInfo.setReplayMessage(null);
             //如果伤害溢出，则血量归零
             if(duelHealth<0){
@@ -1047,7 +1047,7 @@ public class ArknightsBattleground {
                 physicsArmor = 0;
                 replayInfo.setReplayMessage("对方反击了你，你受到了"+harm+"点物理伤害");
             }
-            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            sendMessageUtil.sendFriendMsg(replayInfo);
             replayInfo.setReplayMessage(null);
 
             //法术伤害计算
@@ -1069,7 +1069,7 @@ public class ArknightsBattleground {
                 magicArmor = 0;
                 replayInfo.setReplayMessage("对方反击了你，你受到了"+harm+"点法术伤害");
             }
-            sendMessageUtil.sendGroupTempMsg(replayInfo);
+            sendMessageUtil.sendFriendMsg(replayInfo);
             replayInfo.setReplayMessage(null);
             if(health<0){
                 health = 0;

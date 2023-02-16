@@ -18,34 +18,10 @@
             a_bili_dynamic
     </select>
 
-    <select id="getBiliCountListByPage" resultMap="BaseResultMap">
-        SELECT
-            uid,
-            name,
-            top
-        FROM
-            a_bili_dynamic
-        WHERE name like '%'||#{name}||'%'
-        or uid like '%'||#{name}||'%'
-        LIMIT 10 offset #{current}
-    </select>
-
-    <select id="getBiliCountListCount" resultType="java.lang.Integer">
-        SELECT
-            count(*) as count
-        FROM
-            a_bili_dynamic
-        WHERE name like '%'||#{name}||'%'
-    </select>
-
-    <select id="getBiliCountListByGroupId" resultMap="BaseResultMap">
-        SELECT
-            uid,
-            name,
-            top
-        FROM
-            a_bili_dynamic
-        where uid in (select uid from a_group_bili_rel where group_id = #{groupId})
+    <select id="getFocusListByGroupId" resultMap="BaseResultMap">
+        SELECT uid, name
+        FROM a_bili_dynamic
+        WHERE uid in (SELECT num_1 FROM a_remind WHERE remind_code = 'biliCheck' AND group_id = #{groupId})
     </select>
 
     <select id="getOneDynamicByName" parameterType="java.lang.String" resultMap="BaseResultMap">
@@ -60,11 +36,25 @@
     </select>
 
     <select id="existBiliUid" resultType="java.lang.Integer">
-        select count(*) from a_bili_dynamic where uid = #{uid}
+        select count(*)
+        from a_bili_dynamic
+        where uid = #{uid}
     </select>
 
-    <select id="selectGroupBiliRel" resultType="java.lang.Integer">
-        select count(*) from a_group_bili_rel where uid = #{uid} and group_id = #{groupId}
+    <select id="selectUidByGroup" parameterType="java.lang.Long" resultType="java.lang.Long">
+        select num_1
+        from a_remind
+        where group_id = #{groupId}
+          and remind_code = 'biliCheck'
+    </select>
+
+    <select id="selectNameByGroup" parameterType="java.lang.Long" resultType="java.lang.String">
+        SELECT name
+        FROM a_bili_dynamic
+        WHERE uid in (select num_1
+                      from a_remind
+                      where group_id = #{groupId}
+                        and remind_code = 'biliCheck')
     </select>
 
     <update id="updateNewDynamic">
@@ -82,38 +72,50 @@
     </update>
 
     <insert id="insertGroupBiliRel">
-        insert into a_group_bili_rel (group_id, uid) values(#{groupId}, #{uid})
+        insert into a_remind (group_id, remind_code, num_1)
+        values (#{groupId}, 'biliCheck', #{uid})
     </insert>
 
     <insert id="insertBiliUid">
-        insert into a_bili_dynamic (uid) values (#{uid})
+        insert into a_bili_dynamic (uid)
+        values (#{uid})
     </insert>
 
-    <delete id="deleteGroupBiliRel">
-        delete from a_group_bili_rel where uid = #{uid} and group_id = #{groupId}
+    <delete id="deleteBiliByUID">
+        delete
+        from a_remind
+        where num_1 = #{uid}
+          and group_id = #{groupId}
+          AND remind_code = 'biliCheck'
     </delete>
 
-    <delete id="deleteUid">
-        delete from a_bili_dynamic where uid = #{uid}
+    <delete id="deleteBiliByName">
+        delete
+        from a_remind
+        WHERE num_1 = (select uid
+                      from a_bili_dynamic
+                      where group_id = #{groupId}
+                        and name = #{name})
+          AND group_id = #{groupId}
+          AND remind_code = 'biliCheck'
     </delete>
 
     <select id="selectGroupByUid" resultType="java.lang.Long">
-        select group_id from a_group_bili_rel where uid = #{uid}
+        select group_id
+        from a_remind
+        where num_1 = #{uid}
+          AND remind_code = 'biliCheck'
     </select>
 
-    <select id="selectGroupByNotListenUid" resultType="java.lang.Long">
-        select group_id from a_group_admin where group_id not in(
-        select group_id from a_group_bili_rel where uid = #{uid}) and group_id like '%'||#{group_id}||'%'
-    </select>
 
-    <select id="getNotListenListByGroupId" resultMap="BaseResultMap">
-        SELECT
-        uid,
-        name,
-        top
-        FROM
-        a_bili_dynamic
-        where uid not in (select uid from a_group_bili_rel where group_id = #{groupId})
-        and name like '%'||#{name}||'%'
-    </select>
+    <!--    <select id="getNotListenListByGroupId" resultMap="BaseResultMap">-->
+<!--        SELECT-->
+<!--        uid,-->
+<!--        name,-->
+<!--        top-->
+<!--        FROM-->
+<!--        a_bili_dynamic-->
+<!--        where uid not in (select uid from a_group_bili_rel where group_id = #{groupId})-->
+<!--        and name like '%'||#{name}||'%'-->
+<!--    </select>-->
 </mapper>

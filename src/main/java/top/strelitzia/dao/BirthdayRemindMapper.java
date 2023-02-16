@@ -5,6 +5,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * 订阅的干员名字写在info_1
+ * @author apotatopudding
+ * @date 2023/2/2 18:49
+ */
 @Repository
 public interface BirthdayRemindMapper {
 

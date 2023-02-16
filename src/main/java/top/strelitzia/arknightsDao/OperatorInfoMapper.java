@@ -54,8 +54,14 @@ public interface OperatorInfoMapper {
     //根据ID查找干员名
     String getOperatorNameById(Integer id);
 
-    //根据char_id查找干员id
+    //根据ID查找特殊召唤物名
+    String getSummonerNameById(Integer id);
+
+    //根据charId查找干员id
     Integer getOperatorIdByChar(String charId);
+
+    //根据charId查找特殊召唤物id
+    Integer getSummonerIdByChar(String charId);
 
     //根据干员id查找干员立绘
     String selectOperatorPngById(String id);

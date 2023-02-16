@@ -9,7 +9,7 @@ public class OperatorBasicInfo {
     private Integer operatorId;
     private Integer operatorRarity;
     private Integer operatorClass;
-    private String charId;
+    private Integer charId;
     private String drawName;
     private String cvNameOfCNMandarin;
     private String cvNameOfCNTopolect;
@@ -54,11 +54,13 @@ public class OperatorBasicInfo {
         this.operatorId = operatorId;
     }
 
-    public String getCharId() {
+    public Integer getCharId() {
         return charId;
     }
 
-    public void setCharId(String charId) { this.charId = charId; }
+    public void setCharId(Integer charId) {
+        this.charId = charId;
+    }
 
     public String getDrawName() {
         drawName = drawName.replace(" ","");

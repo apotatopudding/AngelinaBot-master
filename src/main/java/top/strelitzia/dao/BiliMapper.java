@@ -7,24 +7,17 @@ import top.strelitzia.model.BiliCount;
 import java.util.List;
 
 /**
+ * 关注uid放在num_1
  * @author wangzy
  * @Date 2021/1/12 17:13
  **/
 @Repository
 public interface BiliMapper {
-    //获取所有uid
+    //获取所有正在监听的uid
     List<BiliCount> getBiliCountList();
 
-    //分页获取关注uid
-    //List<BiliCount> getBiliCountListByPage(@Param("name")String name, @Param("current")Integer current);
-
-    //Integer getBiliCountListCount(@Param("name")String name);
-
-    //获取某群的关注列表
-    List<BiliCount> getBiliCountListByGroupId(@Param("groupId") Long groupId);
-
-    //获取某群没有关注列表
-    //List<BiliCount> getNotListenListByGroupId(@Param("groupId") Long groupId, @Param("name") String name);
+    //获取指定群关注列表的名字和uid信息
+    List<BiliCount> getFocusListByGroupId(@Param("groupId") Long groupId);
 
     //更新uid的动态列表
     void updateNewDynamic(BiliCount bili);
@@ -36,23 +29,24 @@ public interface BiliMapper {
     void insertGroupBiliRel(@Param("groupId") Long groupId, @Param("uid") Long uid);
 
     //某群取关某uid
-    void deleteGroupBiliRel(@Param("groupId") Long groupId, @Param("uid") Long uid);
+    void deleteBiliByUID(@Param("groupId") Long groupId, @Param("uid") Long uid);
 
-    //查询是否已关注
-    Integer selectGroupBiliRel(@Param("groupId") Long groupId, @Param("uid") Long uid);
+    //某群取关某名字UP
+    void deleteBiliByName(@Param("groupId") Long groupId, @Param("name") String name);
+
+    //查询指定群号关注的所有uid
+    List<Long> selectUidByGroup(@Param("groupId") Long groupId);
+
+    //查询指定群号关注的所有uid
+    List<String> selectNameByGroup(@Param("groupId") Long groupId);
 
     //查询改uid是否已监听
     Integer existBiliUid(@Param("uid") Long uid);
 
-    //关注某uid
+    //将某uid加入监听
     void insertBiliUid(@Param("uid") Long uid);
 
     //查询uid被哪些群关注
-    List<Long> selectGroupByUid(@Param("uid") Long uid);
+    List<Long> selectGroupByUid(@Param("uid") String uid);
 
-    //查询uid没有被哪些群关注
-    //List<Long> selectGroupByNotListenUid(@Param("uid") Long uid, @Param("groupId") String groupId);
-
-    //删除UID
-    //Integer deleteUid(@Param("uid") Long uid);
 }

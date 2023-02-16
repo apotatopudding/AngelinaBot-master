@@ -1,8 +1,6 @@
 package top.strelitzia.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import top.angelinaBot.annotation.AngelinaGroup;
 import top.angelinaBot.container.AngelinaEventSource;
 import top.angelinaBot.container.AngelinaListener;
 import top.angelinaBot.model.MessageInfo;
@@ -76,7 +74,7 @@ public class drawAndGuessService {
                     right = true;
                 }
             }
-            sendMessageUtil.sendGroupTempMsg(replayInfo1);
+            sendMessageUtil.sendFriendMsg(replayInfo1);
             replayInfo1.setReplayMessage(null);
         }
         replayInfo.setReplayMessage("感谢"+messageInfo.getName()+"为我们提供的题目，请各位根据下图，答出你心目中的答案吧");

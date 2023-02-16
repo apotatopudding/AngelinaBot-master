@@ -117,7 +117,6 @@ public class AgentService {
             } else {
                 replayInfo.setReplayMessage(s);
             }
-
         }else {
             replayInfo.setReplayMessage("今日抽卡机会无了");
         }

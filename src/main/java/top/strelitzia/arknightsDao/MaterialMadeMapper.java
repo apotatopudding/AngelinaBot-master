@@ -1,6 +1,7 @@
 package top.strelitzia.arknightsDao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.MapCostInfo;
 import top.strelitzia.model.MapMatrixInfo;
 import top.strelitzia.model.MaterialInfo;
@@ -12,6 +13,8 @@ import java.util.List;
  * @author wangzy
  * @Date 2020/12/14 15:05
  **/
+
+@Repository
 public interface MaterialMadeMapper {
 
     //根据材料名获取该材料的合成列表

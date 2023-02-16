@@ -81,7 +81,7 @@ public class HorseRaceService {
         replayInfo.setReplayImg(textLine.drawImage());
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.getReplayImg().clear();
-        replayInfo.setReplayMessage("各位可以选择您喜欢的选手，发送下注 XX（选手名字或编号） XX（积分）为您喜欢的选手加油助威哦" +
+        replayInfo.setReplayMessage("各位可以选择您喜欢的选手，发送 下注□XX（选手名字或编号）□XX（积分） 为您喜欢的选手加油助威哦" +
                 "\n动态赔率规则：根据选手状态，赔率栏分为，状态爆表0.5倍（向上收整），状态不错1倍，状态一般2倍，状态还行4倍，状态不佳8倍");
         sendMessageUtil.sendGroupMsg(replayInfo);
         replayInfo.setReplayMessage(null);

@@ -321,30 +321,35 @@ public class PictureLibraryService {
                     checkGroupList.remove(messageInfo.getGroupId());
                     return replayInfo;
                 }
-                if(callBack.getText().equals("通过")){
-                    pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),1);
-                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，置入常规图库成功");
-                    sendMessageUtil.sendGroupMsg(replayInfo);
-                    replayInfo.setReplayMessage(null);
-                }else if (callBack.getText().equals("不通过")){
-                    if (file.delete()){
-                        pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
-                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，图片已被删除");
-                    }else {
-                        pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),2);
-                        replayInfo.setReplayMessage("图片操作异常，已备注");
+                switch (callBack.getText()){
+                    case "通过" -> {
+                        pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),1);
+                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，置入常规图库成功");
+                        sendMessageUtil.sendGroupMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
                     }
-                    sendMessageUtil.sendGroupMsg(replayInfo);
-                    replayInfo.setReplayMessage(null);
-                }else if(callBack.getText().equals("标记")){
-                    pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),999);
-                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"的图片已被标注");
-                    sendMessageUtil.sendGroupMsg(replayInfo);
-                    replayInfo.setReplayMessage(null);
-                }else {
-                    replayInfo.setReplayMessage("审核已结束");
-                    checkGroupList.remove(messageInfo.getGroupId());
-                    return replayInfo;
+                    case "不通过" -> {
+                        if (file.delete()){
+                            pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
+                            replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，图片已被删除");
+                        }else {
+                            pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),2);
+                            replayInfo.setReplayMessage("图片操作异常，已备注");
+                        }
+                        sendMessageUtil.sendGroupMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
+                    }
+                    case "标记" -> {
+                        pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),999);
+                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"的图片已被标注");
+                        sendMessageUtil.sendGroupMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
+                    }
+                    default -> {
+                        replayInfo.setReplayMessage("审核已结束");
+                        checkGroupList.remove(messageInfo.getGroupId());
+                        return replayInfo;
+                    }
                 }
             }
         }else{
@@ -391,39 +396,48 @@ public class PictureLibraryService {
                     replayInfo.setReplayMessage("等待超时，审核结束");
                     return replayInfo;
                 }
-                if(callBack.getText().equals("通过")){
-                    File targetFolder = new File("runFile/picture/"+picInfo.getFolder());
-                    if (!targetFolder.exists()) targetFolder.mkdirs();
-                    Path source = Paths.get(path);
-                    Path target = Paths.get("runFile/picture/" +picInfo.getFolder()+ "/" + picInfo.getFolder() + "-" + picInfo.getPictureId() + "." +picInfo.getFormat());
-                    try{
-                        Files.move(source,target, StandardCopyOption.REPLACE_EXISTING);
-                    }catch (IOException e){
-                        log.error(e.toString());
+                switch (callBack.getText()){
+                    case "通过" -> {
+                        File targetFolder = new File("runFile/picture/"+picInfo.getFolder());
+                        if (!targetFolder.exists()) targetFolder.mkdirs();
+                        Path source = Paths.get(path);
+                        Path target = Paths.get("runFile/picture/" +picInfo.getFolder()+ "/" + picInfo.getFolder() + "-" + picInfo.getPictureId() + "." +picInfo.getFormat());
+                        try{
+                            Files.move(source,target, StandardCopyOption.REPLACE_EXISTING);
+                        }catch (IOException e){
+                            log.error(e.toString());
+                        }
+                        pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),1);
+                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，置入常规图库成功");
+                        sendMessageUtil.sendFriendMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
                     }
-                    pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),1);
-                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，置入常规图库成功");
-                    sendMessageUtil.sendFriendMsg(replayInfo);
-                    replayInfo.setReplayMessage(null);
-                }else if (callBack.getText().equals("不通过")){
-                    Path source = Paths.get(path);
-                    try {
-                        Files.delete(source);
-                        pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
-                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，图片已被删除");
-                    }catch (IOException e){
-                        log.error(e.toString());
+                    case "不通过" -> {
+                        Path source = Paths.get(path);
+                        try {
+                            Files.delete(source);
+                            pictureLibraryMapper.deletePictureByPictureId(picInfo.getPictureId());
+                            replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"，图片已被删除");
+                        }catch (IOException e){
+                            log.error(e.toString());
+                        }
+                        sendMessageUtil.sendFriendMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
                     }
-                    sendMessageUtil.sendFriendMsg(replayInfo);
-                    replayInfo.setReplayMessage(null);
-                }else if(callBack.getText().equals("标记")){
-                    pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),999);
-                    replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"的图片已被标注");
-                    sendMessageUtil.sendFriendMsg(replayInfo);
-                    replayInfo.setReplayMessage(null);
-                }else {
-                    replayInfo.setReplayMessage("审核已结束");
-                    return replayInfo;
+                    case "标记" -> {
+                        pictureLibraryMapper.updateAuditAndType(picInfo.getPictureId(),999);
+                        replayInfo.setReplayMessage("审核结果已收录，编号"+picInfo.getPictureId()+"的图片已被标注");
+                        sendMessageUtil.sendFriendMsg(replayInfo);
+                        replayInfo.setReplayMessage(null);
+                    }
+                    case "关闭审核" -> {
+                        replayInfo.setReplayMessage("审核已结束");
+                        return replayInfo;
+                    }
+                    default -> {
+                        replayInfo.setReplayMessage("异常退出");
+                        return replayInfo;
+                    }
                 }
             }
         }else{
@@ -457,6 +471,9 @@ public class PictureLibraryService {
                         log.error(e.toString());
                         replayInfo.setReplayMessage("编号"+picInfo.getPictureId()+"数据已被删除，但文件删除失败");
                     }
+                }else if(messageInfo.getArgs().get(1).equals("标记")) {
+                    pictureLibraryMapper.deleteSignPicture();
+                    replayInfo.setReplayMessage("所有标记图片已被全部删除");
                 }else {
                     replayInfo.setReplayMessage("输入不符");
                 }
@@ -498,6 +515,10 @@ public class PictureLibraryService {
                 if (messageInfo.getArgs().get(1).equals("添加")) {
                     if (messageInfo.getArgs().get(2).matches("^[1-9]\\d*$")) {
                         Long qq = Long.valueOf(messageInfo.getArgs().get(2));
+                        Integer num = pictureLibraryMapper.selectBlack(qq);
+                        if(num>0){
+                            replayInfo.setReplayMessage("黑名单已存在该人员");
+                        }
                         pictureLibraryMapper.insertBlack(qq);
                         replayInfo.setReplayMessage("该人员已被加入黑名单");
                     }else {

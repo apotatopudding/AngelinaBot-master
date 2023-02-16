@@ -33,6 +33,9 @@ public interface PictureLibraryMapper {
     //删除一张图片记录
     void deletePictureByPictureId(Integer pictureId);
 
+    //删除一张图片记录
+    void deleteSignPicture();
+
     //查询ID对应的上传者QQ
     Long selectUploadQQByPictureId(Integer pictureId);
 

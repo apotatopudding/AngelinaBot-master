@@ -49,7 +49,7 @@ public class TalkTallService {
         if(permission.getLevel()<0){
             replayInfo.setReplayMessage("测试消息");
             try {
-                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                sendMessageUtil.sendFriendMsg(replayInfo);
             }catch (IllegalStateException e){
                 log.error(e.toString());
                 groupList.remove(messageInfo.getGroupId());
@@ -161,7 +161,7 @@ public class TalkTallService {
             replayInfo.setQq(QQ);
             replayInfo.setReplayMessage("你摇了摇骰盅，看了一眼，你丢出了【"+list.get(0)+"】【"+list.get(1)+"】【"+list.get(2)+"】【"+list.get(3)+"】【"+list.get(4)+"】【"+list.get(5)+"】");
             try {
-                sendMessageUtil.sendGroupTempMsg(replayInfo);
+                sendMessageUtil.sendFriendMsg(replayInfo);
             }catch (Exception e){
                 e.printStackTrace();
                 groupList.remove(messageInfo.getGroupId());

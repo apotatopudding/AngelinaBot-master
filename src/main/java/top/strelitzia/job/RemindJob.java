@@ -109,7 +109,7 @@ public class RemindJob {
     @Async
     public void lookWorldJob() {
         ReplayInfo replayInfo = new ReplayInfo();
-        List<Long> groupList = lookWorldMapper.selectGroupIdBySubscribe();
+        List<Long> groupList = lookWorldMapper.selectAllGroup();
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
             BufferedImage image = ImageIO.read(new File("runFile/news/" + sdf.format(new Date()) + ".jpg"));

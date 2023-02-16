@@ -1,6 +1,7 @@
 package top.strelitzia.arknightsDao;
 
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.EquipBuff;
 import top.strelitzia.model.EquipInfo;
 import top.strelitzia.model.MaterialInfo;
@@ -11,6 +12,8 @@ import java.util.List;
  * @author wangzy
  * @Date 2021/3/29 17:07
  **/
+
+@Repository
 public interface EquipMapper {
 
     Integer insertEquipInfo(EquipInfo equipInfo);

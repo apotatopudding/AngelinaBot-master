@@ -36,6 +36,9 @@ public class NotClassifiedService {
     @Value("${userConfig.ownerQQ}")
     private String QQ;
 
+    @Value("${userConfig.botNames}")
+    private String[] botNames;
+
     public String QQSetInstance(){
         if (QQInstance == null) {
             synchronized (NotClassifiedService.class) {
@@ -61,6 +64,59 @@ public class NotClassifiedService {
         return GroupInstance;
     }
 
+//    @AngelinaGroup(keyWords = {"数据库转移"})
+//    public ReplayInfo remove(MessageInfo messageInfo) {
+//        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+//        if (messageInfo.getQq().equals(Long.valueOf(QQ))){
+//            adminUserMapper.create();
+//            TempInfo Birthday = adminUserMapper.selectAllBirthday();
+//            adminUserMapper.insertAllBirthday(Birthday);
+//            TempInfo Bili = adminUserMapper.selectAllBili();
+//            adminUserMapper.insertAllBili(Bili);
+//            Long LookWorld = adminUserMapper.selectAllLookWorld();
+//            adminUserMapper.insertAllLookWorld(LookWorld);
+//            replayInfo.setReplayMessage("转移完成");
+//        }
+//        return replayInfo;
+//    }
+//    @AngelinaGroup(keyWords = {"数据库删除"})
+//    public ReplayInfo delete(MessageInfo messageInfo) {
+//        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
+//        if (messageInfo.getQq().equals(Long.valueOf(QQ))){
+//            replayInfo.setReplayMessage("数据库删除后不可恢复，请务必确认转移完成，建议自我进行本地确认再执行删除，如需取消回复取消即可，确认删除吗");
+//            sendMessageUtil.sendGroupMsg(replayInfo);
+//            replayInfo.setReplayMessage(null);
+//            AngelinaListener angelinaListener = new AngelinaListener() {
+//                @Override
+//                public boolean callback(MessageInfo message) {
+//                    return message.getText().equals("确认")||message.getText().equals("取消");
+//                }
+//            };
+//            angelinaListener.setQq(messageInfo.getQq());
+//            angelinaListener.setGroupId(messageInfo.getGroupId());
+//            angelinaListener.setFunctionId("temp");
+//            MessageInfo replay = AngelinaEventSource.waiter(angelinaListener).getMessageInfo();
+//            if (replay == null){
+//                replayInfo.setReplayMessage("已超时");
+//                return replayInfo;
+//            }else {
+//                if(replay.getText().equals("确认")){
+//                    if (adminUserMapper.selectExist("a_birthday_remind") == 1)
+//                        adminUserMapper.deleteAllBirthday();
+//                    if (adminUserMapper.selectExist("a_group_bili_rel") == 1)
+//                        adminUserMapper.deleteAllBili();
+//                    if (adminUserMapper.selectExist("a_look_world") == 1)
+//                        adminUserMapper.deleteAllLookWorld();
+//                    replayInfo.setReplayMessage("数据库删除完成");
+//                }else {
+//                    replayInfo.setReplayMessage("删除程序关闭");
+//                    return replayInfo;
+//                }
+//            }
+//        }
+//        return replayInfo;
+//    }
+
     @AngelinaEvent(event = EventEnum.BotJoinGroupEvent, description = "bot进群")
     public ReplayInfo BotJoin(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
@@ -75,10 +131,11 @@ public class NotClassifiedService {
             }
         }else {
             replayInfo.setReplayMessage("大家好！新人琴柳，向您报道！"
-                    + "您可以随时通过【琴柳】呼唤我"
+                    + "您可以随时通过【琴柳】或【76】呼唤我"
                     + "\n洁哥源码：https://github.com/Strelizia02/AngelinaBot"
-                    + "\n琴柳版源码：https://github.com/apotatopudding/AngelinaBot-master"
-                    + "\n欢迎加入琴柳主群：679030636"
+                    + "\n琴柳版源码：https://github.com/apotatopudding/SaileachBot"
+                    + "\n琴柳的最新动向会在琴柳主群发布，如需获取请加入琴柳主群"
+                    + "\n琴柳主群群号：679030636"
                     + "\n如果你也希望拥有一个自己的机器人，可以加入安洁莉娜克隆中心获取"
                     + "\n克隆中心群号：235917683");
         }
@@ -198,7 +255,7 @@ public class NotClassifiedService {
         return replayInfo;
     }
 
-    @AngelinaGroup(keyWords = {"壁纸"}, description = "发送一张壁纸库的图片", sort = "娱乐功能",funcClass = "好图分享")
+    //@AngelinaGroup(keyWords = {"壁纸"}, description = "发送一张壁纸库的图片", sort = "娱乐功能",funcClass = "好图分享")
     public ReplayInfo GroupWallPaper(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo(messageInfo);
         if(messageInfo.getArgs().size()>1){
@@ -322,13 +379,6 @@ public class NotClassifiedService {
     }
     */
 
-    @AngelinaGroup(keyWords = {"禁言"},description = "嘿嘿嘿")
-    public ReplayInfo spoof(MessageInfo messageInfo) {
-        ReplayInfo replayInfo = new ReplayInfo(messageInfo);
-        if (messageInfo.getBotPermission().getLevel()>messageInfo.getUserAdmin().getLevel()) replayInfo.setMuted(10);
-        return replayInfo;
-    }
-
     @AngelinaGroup(keyWords = {"反馈"},description = "可以用于给运营管理发送反馈的消息，只限单条文字内容消息")
     public ReplayInfo feedback(MessageInfo messageInfo) {
         ReplayInfo replayInfo = new ReplayInfo();
@@ -336,7 +386,7 @@ public class NotClassifiedService {
         replayInfo.setQq(Long.valueOf(QQSetInstance()));
         replayInfo.setLoginQQ(MiraiFrameUtil.messageIdMap.get(messageInfo.getGroupId()));
         if(messageInfo.getArgs().size()>1){
-            String s = "琴柳收到一条反馈消息:\n" + messageInfo.getArgs().get(1) +
+            String s = botNames[0]+"收到一条反馈消息:\n" + messageInfo.getArgs().get(1) +
                     "\n发送方为" + messageInfo.getGroupName() + "群成员" + messageInfo.getName() +
                     "\n群号：" + messageInfo.getGroupId();
             replayInfo.setReplayMessage(s);
@@ -397,6 +447,5 @@ public class NotClassifiedService {
             e.printStackTrace();
         }
     }
-
  */
 }

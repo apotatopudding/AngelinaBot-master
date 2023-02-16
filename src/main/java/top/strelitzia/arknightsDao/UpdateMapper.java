@@ -12,31 +12,40 @@ import top.strelitzia.model.*;
 public interface UpdateMapper {
 
     //插入一个干员信息
-    Integer insertOperator(OperatorInfo operatorInfo);
+    void insertOperator(OperatorInfo operatorInfo);
+
+    //插入一个召唤物信息
+    void insertSummoner(OperatorInfo operatorInfo);
 
     //根据名字查询一个干员id
     Integer selectOperatorIdByName(String name);
 
+    //根据charId查询一个干员数据库编号
+    Integer selectOperatorIdByCharId(String charId);
+
+    //根据charId查询一个召唤物数据库编号
+    Integer selectSummonerIdByCharId(String charId);
+
     //插入一个干员精英化材料信息
-    Integer insertOperatorEvolve(OperatorEvolveInfo operatorEvolveInfo);
+    void insertOperatorEvolve(OperatorEvolveInfo operatorEvolveInfo);
 
     //插入一个干员技能信息
-    Integer insertOperatorSkill(OperatorSkillInfo operatorSkillInfo);
+    void insertOperatorSkill(OperatorSkillInfo operatorSkillInfo);
 
     //插入一个干员天赋信息
-    Integer insertOperatorTalent(TalentInfo talentInfo);
+    void insertOperatorTalent(TalentInfo talentInfo);
 
     //根据技能名获取技能id
     Integer selectSkillIdByName(String SkillName);
 
     //插入一个技能升级材料信息
-    Integer insertSkillMater(SkillMaterInfo skillMaterInfo);
+    void insertSkillMater(SkillMaterInfo skillMaterInfo);
 
     //插入一个材料合成公式
     Integer insertMaterialMade(@Param("materialId") String material_id, @Param("useMaterialId") Integer useMaterialId, @Param("useNumber") Integer useNumber);
 
-    //清空数据库重新插入
-    Integer clearOperatorData();
+    //清空未知charId的数据
+    Integer clearUnknownData();
 
     //清空地图信息
     Integer clearMatrixData();
@@ -45,7 +54,10 @@ public interface UpdateMapper {
     Integer selectMatrixCount();
 
     //更新干员面板数据
-    Integer updateOperatorData(OperatorData operatorData);
+    void updateOperatorData(OperatorData operatorData);
+
+    //更新干员面板数据
+    void updateSummonerData(OperatorData operatorData);
 
     //更新地图数据
     Integer updateStageData(MapJson mapJson);
@@ -62,7 +74,7 @@ public interface UpdateMapper {
 
     Integer updateEnemy(EnemyInfo enemyInfo);
 
-    Integer updateTags(@Param("name") String name, @Param("rarity") Integer rarity, @Param("tags") String tags);
+    Integer insertTags(@Param("charId") String charId,@Param("name") String name, @Param("rarity") Integer rarity, @Param("tags") String tags);
 
     String getVersion();
 
@@ -70,9 +82,15 @@ public interface UpdateMapper {
 
     Integer insertVersion();
 
-    Integer updateOperatorInfo(OperatorBasicInfo operatorInfo);
+    //更新干员基础信息
+    void updateOperatorInfo(OperatorBasicInfo operatorInfo);
 
     Integer updateCVNameByOperatorId(OperatorBasicInfo operatorBasicInfo);
 
-    Integer updateSkillDecs(SkillDesc skillDesc);
+    //插入干员技能信息
+    void updateSkillDesc(SkillDesc skillDesc);
+
+//    //写入卡池信息
+//    void insertGachePool(GachePoolInfo gachePoolInfo);
+
 }

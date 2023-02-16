@@ -2,82 +2,173 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.strelitzia.arknightsDao.SkinInfoMapper">
     <resultMap id="BaseResultMap" type="top.strelitzia.model.SkinInfo">
-        <result column="operator_id" property="operatorId" jdbcType="INTEGER"/>
+        <result column="operator_id" property="operatorId" jdbcType="VARCHAR"/>
         <result column="operator_name" property="operatorName" jdbcType="VARCHAR"/>
+        <result column="skin_id" property="skinId" jdbcType="INTEGER"/>
+        <result column="skin_path" property="skinPath" jdbcType="VARCHAR"/>
+        <result column="char_id" property="charId" jdbcType="VARCHAR"/>
         <result column="skin_name" property="skinName" jdbcType="VARCHAR"/>
-        <result column="skin_group_name" property="skinGroupName" jdbcType="VARCHAR"/>
         <result column="drawer_name" property="drawerName" jdbcType="VARCHAR"/>
-        <result column="dialog" property="dialog" jdbcType="VARCHAR"/>
-        <result column="skin_base64" property="skinBase64" jdbcType="VARCHAR"/>
-
+        <result column="skin_group_id" property="skinGroupId" jdbcType="VARCHAR"/>
+        <result column="skin_group_name" property="skinGroupName" jdbcType="VARCHAR"/>
+        <result column="brand_id" property="brandId" jdbcType="VARCHAR"/>
+        <result column="content" property="content" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="INTEGER"/>
     </resultMap>
 
-    <select id="selectSkinByInfo" resultMap="BaseResultMap">
+    <resultMap id="GroupResultMap" type="top.strelitzia.model.SkinGroupInfo">
+        <result column="brand_id" property="brandId" jdbcType="VARCHAR"/>
+        <result column="brand_name" property="brandName" jdbcType="VARCHAR"/>
+        <result column="brand_capital_name" property="brandCapitalName" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+    </resultMap>
+    
+    <select id="selectSkinByName" resultMap="BaseResultMap">
         SELECT
-            b.operator_name,
-            a.skin_name,
-            a.skin_group_name,
-            a.drawer_name,
-            a.dialog,
-            a.skin_base64
-        FROM
-            t_operator_skin a
-        LEFT JOIN t_operator b ON a.operator_id = b.char_id
-        WHERE
-            b.operator_name = #{info}
-        OR a.skin_name = #{info}
-        OR a.skin_group_name LIKE '%'||#{info}||'%'
-        OR a.drawer_name = #{info}
-    </select>
-
-    <select id="selectAllNames" resultType="java.lang.String">
-        select skin_name from t_operator_skin
-    </select>
-
-    <select id="selectSkinById" parameterType="java.lang.Integer" resultType="java.lang.String">
-        SELECT
-            skin_base64
+           *
         FROM
             t_operator_skin
         WHERE
-            id = #{id}
+            operator_name = #{operatorName}
     </select>
 
-    <select id="selectBase64IsUrl" resultType="java.lang.Integer">
+<!--    <select id="selectSkinByName" parameterType="java.lang.String" resultType="java.lang.String">-->
+<!--        SELECT * from (SELECT operator_name from t_operator_skin GROUP BY operator_name) WHERE operator_name LIKE '%'||#{str}||'%'-->
+<!--    </select>-->
+
+    <select id="selectAllSkinId" resultType="java.lang.String">
+        select skin_id from t_operator_skin
+    </select>
+
+    <select id="selectSkinById" parameterType="java.lang.String" resultType="java.lang.String">
         SELECT
-            id
+            skin_path
         FROM
             t_operator_skin
         WHERE
-            INSTR(skin_base64,'http')
+            skin_id = #{skinId}
     </select>
 
-    <update id="updateBaseStrById">
-        UPDATE
+    <select id="selectCharIdByName" parameterType="java.lang.String" resultType="java.lang.String">
+        select
+            char_id
+        from
             t_operator_skin
-        SET
-            skin_base64 = #{skinBase64}
-        WHERE
-            id = #{id}
-	</update>
+        where
+            operator_name = #{name}
+        limit 1
+    </select>
+
+    <select id="getOperatorInfoByChar" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+            operator_id,
+            operator_name
+        from
+            t_operator
+        where
+            char_id=#{charId}
+        limit 1
+    </select>
+
+    <select id="getSummonerInfoByChar" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+            operator_id,
+            operator_name
+        from
+            t_operator_summon
+        where
+            char_id=#{charId}
+        limit 1
+    </select>
 
     <insert id="insertBySkinInfo" parameterType="top.strelitzia.model.SkinInfo">
-        INSERT INTO t_operator_skin (
-            operator_id,
-            skin_name,
-            skin_group_name,
-            drawer_name,
-            dialog,
-            skin_base64
-        )
+        INSERT INTO
+            t_operator_skin
+        (operator_id,
+         operator_name,
+         skin_id,
+         skin_path,
+         char_id,
+         skin_name,
+         drawer_name,
+         skin_group_id,
+         skin_group_name,
+         brand_id,
+         content,
+         type)
         VALUES
-            (
-                #{operatorId},
-                #{skinName},
-                #{skinGroupName},
-                #{drawerName},
-                #{dialog},
-                #{skinBase64}
-            )
+            (#{operatorId},
+            #{operatorName},
+            #{skinId},
+            #{skinPath},
+            #{charId},
+            #{skinName},
+            #{drawerName},
+            #{skinGroupId},
+            #{skinGroupName},
+            #{brandId},
+            #{content},
+            #{type})
     </insert>
+
+    <insert id="insertSkinGroupInfo" parameterType="top.strelitzia.model.SkinGroupInfo">
+        INSERT INTO t_operator_skin_group
+        (brand_id,
+         brand_name,
+         brand_capital_name,
+         description)
+        VALUES (#{brandId},
+                #{brandName},
+                #{brandCapitalName},
+                #{description})
+    </insert>
+
+    <update id="updateBrandIdBySkinGroupId" parameterType="java.lang.String">
+        UPDATE t_operator_skin
+        SET brand_id = #{brandId}
+        WHERE skin_group_id = #{skinGroupId}
+    </update>
+
+    <select id="selectAllBrandId" resultType="java.lang.String">
+        SELECT
+            brand_id
+        FROM
+            t_operator_skin_group
+    </select>
+
+    <select id="selectSkinGroupByName" parameterType="java.lang.String" resultMap="GroupResultMap">
+        SELECT *
+        FROM t_operator_skin_group
+        WHERE brand_name = #{brandName}
+    </select>
+
+    <select id="selectAllSkinGroupName" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT brand_name
+        FROM t_operator_skin_group
+    </select>
+
+    <select id="selectSkinInfoByBrandId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT operator_name,skin_id,skin_name,skin_group_name
+        FROM t_operator_skin
+        WHERE brand_id = #{brandId}
+    </select>
+
+<!--    <select id="selectBase64IsUrl" resultType="java.lang.Integer">-->
+<!--        SELECT-->
+<!--            id-->
+<!--        FROM-->
+<!--            t_operator_skin-->
+<!--        WHERE-->
+<!--            INSTR(skin_base64,'http')-->
+<!--    </select>-->
+
+<!--    <update id="updateBaseStrById">-->
+<!--        UPDATE-->
+<!--            t_operator_skin-->
+<!--        SET-->
+<!--            skin_base64 = #{skinBase64}-->
+<!--        WHERE-->
+<!--            id = #{id}-->
+<!--    </update>-->
+
 </mapper>

@@ -1,5 +1,6 @@
 package top.strelitzia.arknightsDao;
 
+import org.springframework.stereotype.Repository;
 import top.strelitzia.model.EnemyInfo;
 
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.List;
  * @author wangzy
  * @Date 2021/1/17 16:22
  **/
+
+@Repository
 public interface EnemyMapper {
     //获取单个敌人信息
     List<EnemyInfo> selectEnemyByName(String name);

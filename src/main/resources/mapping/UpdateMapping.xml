@@ -15,6 +15,26 @@
         LIMIT 1
     </select>
 
+    <select id="selectOperatorIdByCharId" resultType="java.lang.Integer">
+        SELECT
+            operator_id
+        FROM
+            t_operator
+        WHERE
+            char_id = #{charId}
+        LIMIT 1
+    </select>
+
+    <select id="selectSummonerIdByCharId" resultType="java.lang.Integer">
+        SELECT
+            operator_id
+        FROM
+            t_operator_summon
+        WHERE
+            char_id = #{charId}
+        LIMIT 1
+    </select>
+
     <select id="selectSkillIdByName" resultType="java.lang.Integer">
         SELECT
             skill_id
@@ -39,14 +59,15 @@
         insert into a_data_version values (0)
     </insert>
 
-    <insert id="updateTags">
+    <insert id="insertTags">
         insert into t_operator_tags_relation
-        (operator_name,operator_rarity,operator_tags)
-        values (#{name},#{rarity},#{tags})
+        (char_id, operator_name, operator_rarity, operator_tags)
+        values (#{charId},#{name},#{rarity},#{tags})
     </insert>
 
     <insert id="insertOperator" parameterType="top.strelitzia.model.OperatorInfo">
         INSERT INTO t_operator (
+            char_id,
             operator_name,
             operator_rarity,
             operator_class,
@@ -54,11 +75,30 @@
             in_limit
         )
         VALUES
-            (#{operator_name},
-            #{operator_rarity},
-            #{operator_class},
+            (#{charId},
+            #{operatorName},
+            #{operatorRarity},
+            #{operatorClass},
             #{available},
-            #{in_limit})
+            #{inLimit})
+    </insert>
+
+    <insert id="insertSummoner" parameterType="top.strelitzia.model.OperatorInfo">
+        INSERT INTO t_operator_summon (
+            char_id,
+            operator_name,
+            operator_rarity,
+            operator_class,
+            available,
+            in_limit
+        )
+        VALUES
+            (#{charId},
+             #{operatorName},
+             #{operatorRarity},
+             #{operatorClass},
+             #{available},
+             #{inLimit})
     </insert>
 
     <insert id="insertOperatorEvolve" parameterType="top.strelitzia.model.OperatorEvolveInfo">
@@ -124,7 +164,7 @@
 
     <insert id="insertSkillMater" parameterType="top.strelitzia.model.SkillMaterInfo">
         INSERT INTO t_operator_skill_mastery_costs (
-            skill_id,mastery_level,use_material_id,use_number
+            skill_id, mastery_level, use_material_id, use_number
         )
         VALUES
             (#{skillId},#{materLevel},
@@ -185,7 +225,7 @@
             #{potential})
     </insert>
 
-    <insert id="updateSkillDecs" parameterType="top.strelitzia.model.SkillDesc">
+    <insert id="updateSkillDesc" parameterType="top.strelitzia.model.SkillDesc">
         INSERT INTO t_operator_skill_desc (
             skill_id,
             skill_type,
@@ -235,10 +275,23 @@
             operator_id = #{id}
     </update>
 
+    <update id="updateSummonerData" parameterType="top.strelitzia.model.OperatorData">
+        UPDATE t_operator_summon
+        SET atk = #{atk},
+            def= #{def},
+            magicResistance= #{magicResistance},
+            maxHp= #{maxHp},
+            blockCnt= #{blockCnt},
+            cost= #{cost},
+            baseAttackTime= #{baseAttackTime},
+            respawnTime= #{respawnTime}
+        WHERE
+            operator_id = #{id}
+    </update>
+
     <update id="updateOperatorInfo" parameterType="top.strelitzia.model.OperatorBasicInfo">
         UPDATE t_operator
-        SET char_id = #{charId},
-        draw_name = #{drawName},
+        SET draw_name = #{drawName},
         code_name = #{codeName},
         sex = #{sex},
         come_from = #{comeFrom},
@@ -267,7 +320,7 @@
         WHERE operator_id = #{operatorId}
     </update>
 
-    <delete id="clearOperatorData">
+    <delete id="clearUnknownData">
         delete from t_operator where char_id is null;
     </delete>
 
@@ -278,4 +331,22 @@
     <select id="selectMatrixCount" resultType="java.lang.Integer">
         select count(matrix_id) from t_matrix;
     </select>
+
+<!--    <insert id="insertGachePool">-->
+<!--        INSERT INTO t_gache_pool (-->
+<!--            gacha_pool_id,-->
+<!--            gacha_index,-->
+<!--            gacha_pool_name,-->
+<!--            open_time,-->
+<!--            end_time,-->
+<!--            gacha_rule_type-->
+<!--        )-->
+<!--        VALUES-->
+<!--            (#{gachaPoolId},-->
+<!--             #{gachaIndex},-->
+<!--             #{gachaPoolName},-->
+<!--             #{openTime},-->
+<!--             #{endTime},-->
+<!--             #{gachaRuleType})-->
+<!--    </insert>-->
 </mapper>

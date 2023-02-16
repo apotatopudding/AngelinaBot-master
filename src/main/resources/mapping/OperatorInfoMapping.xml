@@ -43,6 +43,10 @@
         <result column="char_id" property="charId" jdbcType="VARCHAR"/>
     </resultMap>
 
+    <resultMap id="skinResultMap" type="top.strelitzia.model.SkinInfo">
+        <result column="operator_name" property="operatorName" jdbcType="VARCHAR"/>
+        <result column="operator_id" property="operatorId" jdbcType="VARCHAR"/>
+    </resultMap>
 
     <select id="getOperatorNameByInfo" parameterType="java.lang.String" resultType="java.lang.String">
         SELECT
@@ -129,6 +133,16 @@
             operator_id = #{id}
     </select>
 
+    <select id="getSummonerNameById" resultType="java.lang.String">
+        SELECT
+            operator_name
+        FROM
+            t_operator_summon
+        WHERE
+            operator_id = #{id}
+    </select>
+
+
     <select id="getOperatorTalent" parameterType="java.lang.String" resultMap="TalentResultMap">
         select
             operator_id,
@@ -152,11 +166,15 @@
         FROM
             t_operator
         WHERE
-            operator_name = #{name} AND char_id is not null
+            operator_name = #{name}
     </select>
 
     <select id="getOperatorIdByChar" parameterType="java.lang.String" resultType="java.lang.Integer">
         select operator_id from t_operator where char_id=#{charId} limit 1
+    </select>
+
+    <select id="getSummonerIdByChar" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select operator_id from t_operator_summon where char_id=#{charId} limit 1
     </select>
 
     <select id="getAllDrawName" resultType="java.lang.String">
