@@ -17,7 +17,7 @@ import java.util.List;
 public interface NickNameMapper {
     String selectNameByNickName(String name);
 
-    List<NickName> selectAllNickName(@Param("current") Integer current, @Param("keyWord") String keyWord);
+//    List<NickName> selectAllNickName(@Param("current") Integer current, @Param("keyWord") String keyWord);
 
     Integer selectAllNickNameCount();
 

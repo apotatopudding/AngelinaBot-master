@@ -1,7 +1,5 @@
 package top.strelitzia.model;
 
-import java.io.Serializable;
-
 /**
  * @author strelitzia
  * @Date 2022/05/03 14:38

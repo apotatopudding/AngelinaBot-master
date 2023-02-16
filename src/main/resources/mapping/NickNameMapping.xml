@@ -10,14 +10,14 @@
         select name from a_nick_name where nick_name = #{name} limit 1
     </select>
 
-    <select id="selectAllNickName" resultMap="BaseResultMap">
-        select nick_name,name
-        from a_nick_name
-        where
-            nick_name like concat('%',#{keyWord},'%')
-            or name like concat('%',#{keyWord},'%')
-        limit 10 offset #{current}
-    </select>
+<!--    <select id="selectAllNickName" resultMap="BaseResultMap">-->
+<!--        select nick_name,name-->
+<!--        from a_nick_name-->
+<!--        where-->
+<!--            nick_name like concat('%',#{keyWord},'%')-->
+<!--            or name like concat('%',#{keyWord},'%')-->
+<!--        limit 10 offset #{current}-->
+<!--    </select>-->
 
     <select id="selectAllNickNameCount" resultType="java.lang.Integer">
         select count(*) as count from a_nick_name
